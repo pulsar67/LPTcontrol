@@ -4,7 +4,12 @@ package com.p67world.lptcontrol;
 import android.app.ActionBar;
 import android.app.FragmentTransaction;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
@@ -17,7 +22,12 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.Toast;
+
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Set;
 
 public class MainActivity extends FragmentActivity implements ActionBar.TabListener {
 
@@ -109,11 +119,16 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
     }
 
     public void onBtClick(MenuItem item) {
+        // On active le BT si nécessaire
         if(!g_btAdapter.isEnabled()) {
             g_btAdapter.enable();
             Toast.makeText(getApplicationContext(), "Le Bluetooth n'etait pas actif et a ete active",
                     Toast.LENGTH_SHORT).show();
         }
+
+        // On crée l'activité de scan
+        Intent serverIntent = new Intent(this, DeviceListActivity.class);
+        startActivityForResult(serverIntent, 1);
     }
 
     public static class AppSectionsPagerAdapter extends FragmentPagerAdapter {
