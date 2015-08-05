@@ -2,6 +2,7 @@ package com.p67world.lptcontrol;
 
 
 import android.app.ActionBar;
+import android.app.Activity;
 import android.app.FragmentTransaction;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -17,6 +18,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -25,11 +27,16 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Set;
+import java.util.UUID;
 
 public class MainActivity extends FragmentActivity implements ActionBar.TabListener {
+
+    // Request codes
+    private static final int REQUEST_CONNECT_BT = 1;
 
     // Adaptateur permet de récupérer le fragment
     AppSectionsPagerAdapter g_pagerAdapter;
@@ -39,6 +46,12 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
     // Adapter Bluetooth
     private BluetoothAdapter g_btAdapter = BluetoothAdapter.getDefaultAdapter();
+
+    // Socket Bluetooth
+    private BluetoothSocket g_btSocket = null;
+
+    private InputStream g_btReceiveStream = null;// Canal de réception
+    private OutputStream g_btSendStream = null;// Canal d'émission
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -128,7 +141,39 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
         // On crée l'activité de scan
         Intent serverIntent = new Intent(this, DeviceListActivity.class);
-        startActivityForResult(serverIntent, 1);
+        startActivityForResult(serverIntent, REQUEST_CONNECT_BT);
+    }
+
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch(requestCode){
+            case REQUEST_CONNECT_BT:
+                // Si on retourne avec un device à connecter
+                if(resultCode == Activity.RESULT_OK){
+                    connectDevice(data, false); // on établit une connexion non sécurisée (?)
+                }
+        }
+    }
+
+    // établissement de la connexion Bluetooth
+    private void connectDevice(Intent data, boolean secure) {
+        // Get the device MAC address
+        String address = data.getExtras()
+                .getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
+        // Get the BluetoothDevice object
+        BluetoothDevice device = g_btAdapter.getRemoteDevice(address);
+
+        try {
+            // On récupère le socket
+            g_btSocket = device.createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"));
+            g_btReceiveStream = g_btSocket.getInputStream();
+            g_btSendStream = g_btSocket.getOutputStream();
+            g_btSocket.connect();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // Attempt to connect to the device
+                //.connect(device, secure);
     }
 
     public static class AppSectionsPagerAdapter extends FragmentPagerAdapter {

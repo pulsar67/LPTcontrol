@@ -24,7 +24,7 @@
 
         <activity android:name=".DeviceListActivity"
             android:configChanges="orientation|keyboardHidden"
-            android:label="Scan des peripheriques en cours"/>
+            android:label="Cliquez sur 'scanner' pour lancer le scan"/>
     </application>
 
 </manifest>

@@ -27,6 +27,9 @@ public class DeviceListActivity extends Activity{
     // Bluetooth adapter
     private BluetoothAdapter g_btAdapter;
 
+    // Adresse du device
+    public static String EXTRA_DEVICE_ADDRESS = "device_address";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -34,6 +37,9 @@ public class DeviceListActivity extends Activity{
         // Setup window
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
         setContentView(R.layout.devicelist);
+
+        // Set result CANCELED in case the user backs out
+        setResult(Activity.RESULT_CANCELED);
 
         // Initialiser le bouton pour faire l'analyse
         Button scanButton = (Button) findViewById(R.id.button_scan);
@@ -101,7 +107,7 @@ public class DeviceListActivity extends Activity{
 
             // Create the result Intent and include the MAC address
             Intent intent = new Intent();
-            intent.putExtra("device_address", address);
+            intent.putExtra(EXTRA_DEVICE_ADDRESS, address);
 
             // Set result and finish this Activity
             setResult(Activity.RESULT_OK, intent);
