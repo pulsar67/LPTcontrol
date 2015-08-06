@@ -8,10 +8,12 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
+import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.Message;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.Fragment;
@@ -25,6 +27,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.SeekBar;
 import android.widget.Toast;
 
 import java.io.IOException;
@@ -32,11 +35,15 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Set;
 import java.util.UUID;
+import android.os.Handler;
 
 public class MainActivity extends FragmentActivity implements ActionBar.TabListener {
 
     // Request codes
     private static final int REQUEST_CONNECT_BT = 1;
+
+    private Menu g_menu;
+    private boolean g_bConnected = false;
 
     // Adaptateur permet de récupérer le fragment
     AppSectionsPagerAdapter g_pagerAdapter;
@@ -44,14 +51,39 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
     // Permet de lier l'onglet au fragment concerner
     ViewPager g_viewPager;
 
-    // Adapter Bluetooth
+    // Socket Bluetooth
+    private BluetoothCom g_btCom;
+
     private BluetoothAdapter g_btAdapter = BluetoothAdapter.getDefaultAdapter();
 
-    // Socket Bluetooth
-    private BluetoothSocket g_btSocket = null;
+    private long lastTime = 0;
 
-    private InputStream g_btReceiveStream = null;// Canal de réception
-    private OutputStream g_btSendStream = null;// Canal d'émission
+    final Handler handler = new Handler() {
+        public void handleMessage(Message msg) {
+            String data = msg.getData().getString("receivedData");
+            Log.d("handlemessage", data);
+        }
+    };
+
+    final Handler handlerStatus = new Handler() {
+        public void handleMessage(Message msg) {
+            int co = msg.arg1;
+            if(co == 1) {
+                // On change l'icone du bouton
+                MenuItem btn = g_menu.findItem(R.id.connectBtn);
+                btn.setIcon(R.drawable.bt_icon_c);
+                g_bConnected = true;
+                Log.d("handlemessage", "Connected");
+            } else if(co == 2){
+                // On change l'icone du bouton
+                MenuItem btn = g_menu.findItem(R.id.connectBtn);
+                btn.setIcon(R.drawable.bt_icon_n);
+                g_bConnected = true;
+                Log.d("handlemessage", "Disconnected");
+            }
+        }
+    };
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,7 +118,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         actionBar.addTab(actionBar.newTab().setText("LAG").setTabListener(this));
 
         // Vérification si on a le BT
-        if(g_btAdapter == null){
+        if(BluetoothAdapter.getDefaultAdapter() == null){
             Toast.makeText(getApplicationContext(), "Votre appareil ne dispose pas de Bluetooth!",
                     Toast.LENGTH_SHORT).show();
             finish();
@@ -97,6 +129,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
+        g_menu = menu;
         return true;
     }
 
@@ -132,16 +165,24 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
     }
 
     public void onBtClick(MenuItem item) {
-        // On active le BT si nécessaire
-        if(!g_btAdapter.isEnabled()) {
-            g_btAdapter.enable();
-            Toast.makeText(getApplicationContext(), "Le Bluetooth n'etait pas actif et a ete active",
+
+        if(g_bConnected == false) {
+            // On active le BT si nécessaire
+            if (!g_btAdapter.isEnabled()) {
+                g_btAdapter.enable();
+                Toast.makeText(getApplicationContext(), "Le Bluetooth n'était pas actif et a été activé",
+                        Toast.LENGTH_SHORT).show();
+            }
+
+            // On crée l'activité de scan
+            Intent serverIntent = new Intent(this, DeviceListActivity.class);
+            startActivityForResult(serverIntent, REQUEST_CONNECT_BT);
+        }
+        else {
+            Toast.makeText(getApplicationContext(), "Vous êtes déjà connecté!",
                     Toast.LENGTH_SHORT).show();
         }
 
-        // On crée l'activité de scan
-        Intent serverIntent = new Intent(this, DeviceListActivity.class);
-        startActivityForResult(serverIntent, REQUEST_CONNECT_BT);
     }
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -149,31 +190,34 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             case REQUEST_CONNECT_BT:
                 // Si on retourne avec un device à connecter
                 if(resultCode == Activity.RESULT_OK){
-                    connectDevice(data, false); // on établit une connexion non sécurisée (?)
+                    // Création du BluetoothCom
+                    g_btCom = new BluetoothCom(handlerStatus, handler);
+
+                    // On connecte et on lance
+                    g_btCom.connect(data.getExtras()
+                                        .getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS));
                 }
         }
     }
 
-    // établissement de la connexion Bluetooth
-    private void connectDevice(Intent data, boolean secure) {
-        // Get the device MAC address
-        String address = data.getExtras()
-                .getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
-        // Get the BluetoothDevice object
-        BluetoothDevice device = g_btAdapter.getRemoteDevice(address);
-
-        try {
-            // On récupère le socket
-            g_btSocket = device.createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"));
-            g_btReceiveStream = g_btSocket.getInputStream();
-            g_btSendStream = g_btSocket.getOutputStream();
-            g_btSocket.connect();
-        } catch (IOException e) {
-            e.printStackTrace();
+    public void onSeekclick(View view) {
+        if(g_bConnected)
+        {
+            SeekBar s = (SeekBar)findViewById(R.id.ledluminosity);
+            sendCommand((byte)9, s.getProgress());
         }
+    }
 
-        // Attempt to connect to the device
-                //.connect(device, secure);
+    public void sendCommand(byte cmd, int value)
+    {
+        byte[] data = new byte[6];
+        data[0] = cmd;
+        data[1] = (byte)((int)value >> 24);
+        data[2] = (byte)((int)value >> 16);
+        data[3] = (byte)((int)value >> 8);
+        data[4] = (byte)((int)value);
+        data[5] = (byte)(data[0]+data[1]+data[2]+data[3]+data[4]);
+        g_btCom.sendBinaryData(data);
     }
 
     public static class AppSectionsPagerAdapter extends FragmentPagerAdapter {
