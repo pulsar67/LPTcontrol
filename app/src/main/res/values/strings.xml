@@ -3,4 +3,9 @@
 
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
+    <string name="strledluminosity">Luminosité des LEDs</string>
+    <string name="strsensitivity">Sensibilité</string>
+    <string name="strInhibition">Délai d\'inhibition</string>
+    <string name="strprefocus">Préfocus</string>
+    <string name="strstartlag">Lancement mesure</string>
 </resources>

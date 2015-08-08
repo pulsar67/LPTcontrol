@@ -9,10 +9,83 @@
         android:layout_gravity="center"
         android:text="Onglet GENERAL"/>
 
-    <SeekBar
+    <GridLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/ledluminosity"
-        android:onClick="onSeekclick"/>
+        android:layout_height="match_parent"
+        android:id="@+id/generallayout">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/strledluminosity"
+            android:layout_row="0"
+            android:layout_column="0"
+            android:layout_gravity="center"/>
+
+        <SeekBar
+            android:layout_width="220dp"
+            android:layout_height="wrap_content"
+            android:id="@+id/seekLedLuminosity"
+            android:layout_row="0"
+            android:layout_column="1"
+            android:layout_marginRight="0dp"
+            android:layout_marginLeft="0dp"
+            android:layout_marginTop="15dp"
+            android:layout_marginBottom="15dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/strsensitivity"
+            android:layout_row="1"
+            android:layout_column="0"
+            android:layout_gravity="center" />
+
+        <SeekBar
+            android:layout_width="220dp"
+            android:layout_height="wrap_content"
+            android:id="@+id/seekSensitivity"
+            android:layout_row="1"
+            android:layout_column="1"
+            android:layout_marginRight="0dp"
+            android:layout_marginLeft="0dp"
+            android:layout_marginTop="15dp"
+            android:layout_marginBottom="15dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/strInhibition"
+            android:layout_row="2"
+            android:layout_column="0"
+            android:layout_gravity="center" />
+
+        <SeekBar
+            android:layout_width="220dp"
+            android:layout_height="wrap_content"
+            android:id="@+id/seekInhibition"
+            android:layout_row="2"
+            android:layout_column="1"
+            android:layout_marginRight="0dp"
+            android:layout_marginLeft="0dp"
+            android:layout_marginTop="15dp"
+            android:layout_marginBottom="15dp" />
+
+        <CheckBox
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/strprefocus"
+            android:id="@+id/checkPrefocus"
+            android:layout_row="3"
+            android:layout_column="1" />
+
+        <Space
+            android:layout_width="20px"
+            android:layout_height="20px"
+            android:layout_row="4"
+            android:layout_column="0" />
+
+    </GridLayout>
+
 
 </LinearLayout>

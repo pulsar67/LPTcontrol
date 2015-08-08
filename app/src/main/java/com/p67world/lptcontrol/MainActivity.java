@@ -27,6 +27,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.NumberPicker;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
@@ -37,13 +41,14 @@ import java.util.Set;
 import java.util.UUID;
 import android.os.Handler;
 
+
 public class MainActivity extends FragmentActivity implements ActionBar.TabListener {
 
     // Request codes
     private static final int REQUEST_CONNECT_BT = 1;
 
     private Menu g_menu;
-    private boolean g_bConnected = false;
+    private static boolean g_bConnected = false;
 
     // Adaptateur permet de récupérer le fragment
     AppSectionsPagerAdapter g_pagerAdapter;
@@ -52,11 +57,10 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
     ViewPager g_viewPager;
 
     // Socket Bluetooth
-    private BluetoothCom g_btCom;
+    private static BluetoothCom g_btCom;
 
     private BluetoothAdapter g_btAdapter = BluetoothAdapter.getDefaultAdapter();
 
-    private long lastTime = 0;
 
     final Handler handler = new Handler() {
         public void handleMessage(Message msg) {
@@ -166,7 +170,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
     public void onBtClick(MenuItem item) {
 
-        if(g_bConnected == false) {
+        if(!g_bConnected) {
             // On active le BT si nécessaire
             if (!g_btAdapter.isEnabled()) {
                 g_btAdapter.enable();
@@ -200,26 +204,6 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         }
     }
 
-    public void onSeekclick(View view) {
-        if(g_bConnected)
-        {
-            SeekBar s = (SeekBar)findViewById(R.id.ledluminosity);
-            sendCommand((byte)9, s.getProgress());
-        }
-    }
-
-    public void sendCommand(byte cmd, int value)
-    {
-        byte[] data = new byte[6];
-        data[0] = cmd;
-        data[1] = (byte)((int)value >> 24);
-        data[2] = (byte)((int)value >> 16);
-        data[3] = (byte)((int)value >> 8);
-        data[4] = (byte)((int)value);
-        data[5] = (byte)(data[0]+data[1]+data[2]+data[3]+data[4]);
-        g_btCom.sendBinaryData(data);
-    }
-
     public static class AppSectionsPagerAdapter extends FragmentPagerAdapter {
 
         public AppSectionsPagerAdapter(FragmentManager fm) {
@@ -248,10 +232,85 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
     // Chargement du contenu
     public static class GeneralFragment extends Fragment {
+        SeekBar g_seekLedLum = null;
+        SeekBar g_seekSensitivity = null;
+        SeekBar g_seekInhibit = null;
+        CheckBox g_checkPrefocus = null;
+
         @Nullable
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
             View l_view = inflater.inflate(R.layout.fragment_general, container, false);
+
+            // Luminosité LEDs
+            g_seekLedLum = (SeekBar)l_view.findViewById(R.id.seekLedLuminosity);
+            g_seekLedLum.setMax(10);
+            g_seekLedLum.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+
+                }
+
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {
+
+                }
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
+                    if (g_bConnected) g_btCom.sendCommand((byte) 9, seekBar.getProgress() * 10);
+                }
+            });
+
+            // Sensibilité
+            g_seekSensitivity = (SeekBar)l_view.findViewById(R.id.seekSensitivity);
+            g_seekSensitivity.setMax(4);
+            g_seekSensitivity.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+
+                }
+
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {
+
+                }
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
+                    if (g_bConnected) g_btCom.sendCommand((byte) 16, seekBar.getProgress());
+                }
+            });
+
+            // Inhibition
+            g_seekInhibit = (SeekBar)l_view.findViewById(R.id.seekInhibition);
+            g_seekInhibit.setMax(100);
+            g_seekInhibit.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+
+                }
+
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {
+
+                }
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
+                    if (g_bConnected) g_btCom.sendCommand((byte) 3, seekBar.getProgress()*100);
+                }
+            });
+
+            // Préfocus
+            g_checkPrefocus = (CheckBox)l_view.findViewById(R.id.checkPrefocus);
+            g_checkPrefocus.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    if (g_bConnected) g_btCom.sendCommand((byte) 17, isChecked?1:0);
+                }
+            });
+
             return l_view;
         }
     }
@@ -266,10 +325,22 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
     }
 
     public static class LagFragment extends Fragment {
+        Button g_btnLag = null;
+
         @Nullable
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
             View l_view = inflater.inflate(R.layout.fragment_lag, container, false);
+
+            // Bouton lancement lag
+            g_btnLag = (Button)l_view.findViewById(R.id.btnStartLag);
+            g_btnLag.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (g_bConnected) g_btCom.sendCommand((byte) 6, 0);
+                }
+            });
+
             return l_view;
         }
     }

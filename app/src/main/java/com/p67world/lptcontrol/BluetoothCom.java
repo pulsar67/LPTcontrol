@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.os.Bundle;
 import android.os.Message;
+import android.util.Log;
 import android.widget.Toast;
 
 import java.io.IOException;
@@ -69,6 +70,22 @@ public class BluetoothCom {
 
     public BluetoothDevice getDevice() {
         return g_btDevice;
+    }
+
+    public void sendCommand(byte cmd, int value)
+    {
+        byte[] data = new byte[6];
+        data[0] = cmd;
+        data[1] = (byte)((int)value >> 24);
+        data[2] = (byte)((int)value >> 16);
+        data[3] = (byte)((int)value >> 8);
+        data[4] = (byte)((int)value);
+        data[5] = (byte)(data[0]+data[1]+data[2]+data[3]+data[4]);
+
+        StringBuilder sb = new StringBuilder(data.length * 2);
+        for(byte b:data)sb.append(String.format("%02x", b & 0xff));
+        Log.d("MESSAGE SENT", sb.toString());
+        sendBinaryData(data);
     }
 
     public void sendData(String data) {
