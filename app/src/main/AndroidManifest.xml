@@ -24,7 +24,8 @@
 
         <activity android:name=".DeviceListActivity"
             android:configChanges="orientation|keyboardHidden"
-            android:label="Cliquez sur 'scanner' pour lancer le scan"/>
+            android:label="Sélection du périphérique"
+            android:theme="@android:style/Theme.Holo.Dialog"/>
     </application>
 
 </manifest>

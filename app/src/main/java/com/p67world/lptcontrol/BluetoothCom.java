@@ -24,10 +24,16 @@ public class BluetoothCom {
     private BluetoothDevice g_btDevice = null;
     private BluetoothSocket g_btSocket = null;
     private BluetoothAdapter g_btAdapter = null;    // Adapter Bluetooth
-
     private ReceiverThread g_btReceiverThread;
-
     Handler g_handler;
+
+
+
+    // UUID
+    private static final UUID MY_UUID =
+            UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
+
+
 
     public BluetoothCom(Handler hstatus, Handler h) {
         g_btAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -37,17 +43,27 @@ public class BluetoothCom {
         g_btReceiverThread = new ReceiverThread(h);
     }
 
-    public void connect(final String address){
+    public void connect(BluetoothDevice device){
+        // On récupère le device
+        g_btDevice = device;
+
         new Thread(){
             @Override
             public void run() {
                 try{
                     // On récupère les infos du device
-                    BluetoothDevice device = g_btAdapter.getRemoteDevice(address);
-                    g_btSocket = device.createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"));
+                    g_btSocket = g_btDevice.createRfcommSocketToServiceRecord(MY_UUID);
+                } catch (IOException e){
+                    e.printStackTrace();
+                }
+
+
+                try{
                     g_btReceiveStream = g_btSocket.getInputStream();
                     g_btSendStream = g_btSocket.getOutputStream();
+
                     g_btSocket.connect();
+
                     Message msg = g_handler.obtainMessage();
                     msg.arg1 = 1;
                     g_handler.sendMessage(msg);
@@ -131,11 +147,14 @@ public class BluetoothCom {
                             for(int i=0;i<k;i++)
                                 rawdata[i] = buffer[i];
 
-                            String data = new String(rawdata);
+
+
+                            //String data = new String(rawdata);
 
                             Message msg = handler.obtainMessage();
                             Bundle b = new Bundle();
-                            b.putString("receivedData", data);
+                            b.putByteArray("receivedData", rawdata);
+                            //b.putString("receivedData", data);
                             msg.setData(b);
                             handler.sendMessage(msg);
                         }

@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.widget.AdapterView;
@@ -41,15 +42,6 @@ public class DeviceListActivity extends Activity{
         // Set result CANCELED in case the user backs out
         setResult(Activity.RESULT_CANCELED);
 
-        // Initialiser le bouton pour faire l'analyse
-        Button scanButton = (Button) findViewById(R.id.button_scan);
-        scanButton.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                doDiscovery();
-                v.setVisibility(View.GONE);
-            }
-        });
-
         // Création de l'adapter array pour la liste des devices
         g_devicesArrayAdapter = new ArrayAdapter<String>(this, R.layout.devicename);
 
@@ -68,6 +60,15 @@ public class DeviceListActivity extends Activity{
 
         // Récupération de l'adaptateur local
         g_btAdapter = BluetoothAdapter.getDefaultAdapter();
+
+        // Initialiser le bouton pour faire l'analyse
+        Button scanButton = (Button) findViewById(R.id.button_scan);
+        scanButton.setOnClickListener(new View.OnClickListener() {
+        public void onClick(View v) {
+            doDiscovery();
+        v.setVisibility(View.GONE);
+        }
+        });
     }
 
     @Override
@@ -99,7 +100,11 @@ public class DeviceListActivity extends Activity{
             = new AdapterView.OnItemClickListener() {
         public void onItemClick(AdapterView<?> av, View v, int arg2, long arg3) {
             // Cancel discovery because it's costly and we're about to connect
-            g_btAdapter.cancelDiscovery();
+            if(g_btAdapter.isDiscovering())
+            {
+                g_btAdapter.cancelDiscovery();
+            }
+
 
             // Get the device MAC address, which is the last 17 chars in the View
             String info = ((TextView) v).getText().toString();
@@ -136,7 +141,7 @@ public class DeviceListActivity extends Activity{
                 setProgressBarIndeterminateVisibility(false);
                 setTitle("Cliquer sur le LPT a connecter");
                 if (g_devicesArrayAdapter.getCount() == 0) {
-                    String noDevices = "Aucun peripherique trouve".toString();
+                    String noDevices = "Aucun peripherique trouve";
                     g_devicesArrayAdapter.add(noDevices);
                 }
             }

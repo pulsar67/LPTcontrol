@@ -32,6 +32,7 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.NumberPicker;
 import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.IOException;
@@ -41,8 +42,53 @@ import java.util.Set;
 import java.util.UUID;
 import android.os.Handler;
 
+import org.w3c.dom.Text;
+
 
 public class MainActivity extends FragmentActivity implements ActionBar.TabListener {
+    // LPT protocol
+    private static final byte LPT_SET_SENSITIVITY_MIN = 1;
+    private static final byte LPT_SET_SENSITIVITY_MAX = 2;
+    private static final byte LPT_SET_INHIBITION =		3;
+    private static final byte LPT_SET_LAG =				4;
+    private static final byte LPT_SET_SENSOR =			5;
+    private static final byte LPT_SET_START_LAG =		6;
+    private static final byte LPT_SET_MANUAL_SHUTTER =	7;
+    private static final byte LPT_SET_MANUAL_STOP =		8;
+    private static final byte LPT_SET_PWM_LED =			9;
+    private static final byte LPT_SET_INTER_NB_POSES =	10;
+    private static final byte LPT_SET_INTER_SHUTTER =	11;
+    private static final byte LPT_SET_INTER_INTERVAL =	12;
+    private static final byte LPT_SET_INTER_DELAY =		13;
+    private static final byte LPT_SET_INTER_START =		14;
+    private static final byte LPT_SET_INTER_STOP =		15;
+    private static final byte LPT_SET_CUR_SENSITIVITY = 16;
+    private static final byte LPT_SET_PREFOCUS =		17;
+
+    private static final byte LPT_GET_CHARGING =		(byte)128;
+    private static final byte LPT_GET_SENSITIVITY_MIN = (byte)129;
+    private static final byte LPT_GET_SENSITIVITY_MAX = (byte)130;
+    private static final byte LPT_GET_INHIBITION =		(byte)131;
+    private static final byte LPT_GET_LAG =				(byte)132;
+    private static final byte LPT_GET_SENSOR =			(byte)133;
+    private static final byte LPT_GET_FW_VERSION =		(byte)134;
+    private static final byte LPT_GET_PWM_LED =			(byte)135;
+    private static final byte LPT_GET_INTER_NB_POSES =	(byte)136;
+    private static final byte LPT_GET_INTER_SHUTTER =	(byte)137;
+    private static final byte LPT_GET_INTER_INTERVAL =	(byte)138;
+    private static final byte LPT_GET_INTER_DELAY =		(byte)139;
+    private static final byte LPT_GET_INTER_CURR_STAT =	(byte)140; // Indique si l'intervallomètre est démarré, si on a une pose en cours ou si
+    private static final byte LPT_GET_INTER_CURR_NB =	(byte)141;
+    private static final byte LPT_GET_CUR_SENSITIVITY = (byte)142;
+    private static final byte LPT_GET_PREFOCUS =		(byte)143;
+    private static final byte LPT_GET_BATT_LVL =		(byte)144;
+    private static final byte LPT_GET_STRIKE_NB =		(byte)145;
+    private static final byte LPT_GET_STRIKE_VAL =		(byte)146;
+
+    private static final byte LPT_INTER_STATE_INACTIVE =	1;
+    private static final byte LPT_INTER_STATE_WAIT_START =	2;
+    private static final byte LPT_INTER_STATE_WAIT_NEXT =	4;
+    private static final byte LPT_INTER_STATE_ACTIVE =		3;
 
     // Request codes
     private static final int REQUEST_CONNECT_BT = 1;
@@ -61,11 +107,55 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
     private BluetoothAdapter g_btAdapter = BluetoothAdapter.getDefaultAdapter();
 
+    private long lastTime = 0;
+    private byte[] g_ReceivedBuffer = new byte[6];
+    private int g_iBufferPos = 0;
+
+    private void manageCom(byte[] data){
+        switch(data[0]){
+            case LPT_GET_CUR_SENSITIVITY:
+                SeekBar seekSens = (SeekBar)findViewById(R.id.seekSensitivity);
+                seekSens.setProgress(g_ReceivedBuffer[4]);
+                break;
+            case LPT_GET_PWM_LED:
+                SeekBar seekLum = (SeekBar)findViewById(R.id.seekLedLuminosity);
+                seekLum.setProgress(g_ReceivedBuffer[4]);
+                break;
+            case LPT_GET_PREFOCUS:
+                CheckBox checkPrefocus = (CheckBox)findViewById(R.id.checkPrefocus);
+                checkPrefocus.setChecked(g_ReceivedBuffer[4]==1);
+                break;
+        }
+    }
 
     final Handler handler = new Handler() {
         public void handleMessage(Message msg) {
-            String data = msg.getData().getString("receivedData");
-            Log.d("handlemessage", data);
+            byte[] data = msg.getData().getByteArray("receivedData");
+
+            // Si on rentre ici avec un buffer nul, on réinitialise le dernier comptage de temps
+            long t = System.currentTimeMillis();
+            if(g_iBufferPos == 0) lastTime = System.currentTimeMillis();
+            // Sinon, si on attend depuis trop longtemps, on réinitialise le buffer
+            else if(t-lastTime > 500){
+                g_iBufferPos = 0;
+            }
+
+            for(byte b:data){
+                // On ajout chaque octet reçu
+                g_ReceivedBuffer[g_iBufferPos++] = b;
+
+                // Si on en a 6, on a probablement une trame complète
+                if(g_iBufferPos == 6){
+                    // Pour la console
+                    StringBuilder sb = new StringBuilder(g_ReceivedBuffer.length * 2);
+                    for(byte d:g_ReceivedBuffer)sb.append(String.format("%02x ", d & 0xff));
+                    Log.d("handlemessage", sb.toString());
+
+                    // On traite
+                    manageCom(g_ReceivedBuffer);
+                    g_iBufferPos = 0;
+                }
+            }
         }
     };
 
@@ -77,6 +167,8 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 MenuItem btn = g_menu.findItem(R.id.connectBtn);
                 btn.setIcon(R.drawable.bt_icon_c);
                 g_bConnected = true;
+                g_btCom.sendCommand(LPT_GET_CUR_SENSITIVITY, 0);
+                g_btCom.sendCommand(LPT_GET_PREFOCUS, 0);
                 Log.d("handlemessage", "Connected");
             } else if(co == 2){
                 // On change l'icone du bouton
@@ -194,12 +286,16 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             case REQUEST_CONNECT_BT:
                 // Si on retourne avec un device à connecter
                 if(resultCode == Activity.RESULT_OK){
+                    g_btAdapter.cancelDiscovery();
+
                     // Création du BluetoothCom
                     g_btCom = new BluetoothCom(handlerStatus, handler);
 
                     // On connecte et on lance
-                    g_btCom.connect(data.getExtras()
-                                        .getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS));
+                    BluetoothDevice device = g_btAdapter
+                            .getRemoteDevice(data.getExtras()
+                                    .getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS));
+                    g_btCom.connect(device);
                 }
         }
     }
@@ -240,7 +336,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         @Nullable
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-            View l_view = inflater.inflate(R.layout.fragment_general, container, false);
+            final View l_view = inflater.inflate(R.layout.fragment_general, container, false);
 
             // Luminosité LEDs
             g_seekLedLum = (SeekBar)l_view.findViewById(R.id.seekLedLuminosity);
@@ -248,7 +344,9 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             g_seekLedLum.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-
+                    TextView text = (TextView)l_view.findViewById(R.id.valLedLum);
+                    String val = Integer.toString(progress*10) + "%";
+                    text.setText(val);
                 }
 
                 @Override
@@ -265,10 +363,15 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             // Sensibilité
             g_seekSensitivity = (SeekBar)l_view.findViewById(R.id.seekSensitivity);
             g_seekSensitivity.setMax(4);
+            if(g_bConnected){
+                g_btCom.sendCommand(LPT_GET_CUR_SENSITIVITY, 0);
+            }
+
             g_seekSensitivity.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-
+                    TextView text = (TextView)l_view.findViewById(R.id.valSensitivity);
+                    text.setText(Integer.toString(progress));
                 }
 
                 @Override
@@ -288,7 +391,9 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             g_seekInhibit.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-
+                    TextView text = (TextView)l_view.findViewById(R.id.valInhibit);
+                    String val = Integer.toString(progress*100) + "ms";
+                    text.setText(val);
                 }
 
                 @Override
@@ -304,6 +409,9 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
             // Préfocus
             g_checkPrefocus = (CheckBox)l_view.findViewById(R.id.checkPrefocus);
+            if(g_bConnected){
+                g_btCom.sendCommand(LPT_GET_PREFOCUS, 0);
+            }
             g_checkPrefocus.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
