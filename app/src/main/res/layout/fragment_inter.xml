@@ -20,6 +20,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="fill_horizontal"
+            android:id="@+id/seekInterStart"
             android:layout_row="0"
             android:layout_column="1"
             android:layout_marginTop="15dp"
@@ -29,6 +30,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:id="@+id/txtInterStart"
             android:text="0 s"
             android:layout_row="0"
             android:layout_column="2"
@@ -46,6 +48,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="fill_horizontal"
+            android:id="@+id/seekInterShutter"
             android:layout_row="1"
             android:layout_column="1"
             android:layout_marginTop="15dp"
@@ -54,6 +57,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:id="@+id/txtInterShutter"
             android:text="0 s"
             android:layout_row="1"
             android:layout_column="2"
@@ -71,6 +75,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="fill_horizontal"
+            android:id="@+id/seekInterInterval"
             android:layout_row="2"
             android:layout_column="1"
             android:layout_marginTop="15dp"
@@ -79,6 +84,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:id="@+id/txtInterInterval"
             android:text="0 s"
             android:layout_row="2"
             android:layout_column="2"
@@ -96,6 +102,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="fill_horizontal"
+            android:id="@+id/seekInterNumber"
             android:layout_row="3"
             android:layout_column="1"
             android:layout_marginTop="15dp"
@@ -104,6 +111,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:id="@+id/txtInterNumber"
             android:text="0"
             android:layout_row="3"
             android:layout_column="2"
@@ -112,6 +120,7 @@
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:id="@+id/btnInterStart"
             android:text="Démarrage"
             android:layout_row="4"
             android:layout_column="0"

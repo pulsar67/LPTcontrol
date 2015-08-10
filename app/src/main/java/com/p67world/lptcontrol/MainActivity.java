@@ -427,7 +427,92 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         @Nullable
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-            View l_view = inflater.inflate(R.layout.fragment_inter, container, false);
+            final View l_view = inflater.inflate(R.layout.fragment_inter, container, false);
+
+            // Seekbars de réglages
+            SeekBar g_seekInterStart = (SeekBar)l_view.findViewById(R.id.seekInterStart);
+            g_seekInterStart.setMax(999);
+            g_seekInterStart.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                    TextView text = (TextView) l_view.findViewById(R.id.txtInterStart);
+                    String val = Integer.toString(progress) + " s";
+                    text.setText(val);
+                }
+
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {
+
+                }
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
+
+                }
+            });
+
+            SeekBar g_seekInterShutter = (SeekBar)l_view.findViewById(R.id.seekInterShutter);
+            g_seekInterShutter.setMax(999);
+            g_seekInterShutter.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                    TextView text = (TextView) l_view.findViewById(R.id.txtInterShutter);
+                    String val = Integer.toString(progress) + " s";
+                    text.setText(val);
+                }
+
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {
+
+                }
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
+
+                }
+            });
+
+            SeekBar g_seekInterInterval = (SeekBar)l_view.findViewById(R.id.seekInterInterval);
+            g_seekInterInterval.setMax(999);
+            g_seekInterInterval.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                    TextView text = (TextView) l_view.findViewById(R.id.txtInterInterval);
+                    String val = Integer.toString(progress) + " s";
+                    text.setText(val);
+                }
+
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {
+
+                }
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
+
+                }
+            });
+
+            SeekBar g_seekInterNumber = (SeekBar)l_view.findViewById(R.id.seekInterNumber);
+            g_seekInterNumber.setMax(999);
+            g_seekInterNumber.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                    TextView text = (TextView)l_view.findViewById(R.id.txtInterNumber);
+                    text.setText(Integer.toString(progress));
+                }
+
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {
+
+                }
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
+
+                }
+            });
+
             return l_view;
         }
     }
