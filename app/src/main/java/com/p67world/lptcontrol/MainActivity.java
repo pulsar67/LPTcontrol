@@ -167,8 +167,8 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 MenuItem btn = g_menu.findItem(R.id.connectBtn);
                 btn.setIcon(R.drawable.bt_icon_c);
                 g_bConnected = true;
-                g_btCom.sendCommand(LPT_GET_CUR_SENSITIVITY, 0);
-                g_btCom.sendCommand(LPT_GET_PREFOCUS, 0);
+                //g_btCom.sendCommand(LPT_GET_CUR_SENSITIVITY, 0);
+                //g_btCom.sendCommand(LPT_GET_PREFOCUS, 0);
                 Log.d("handlemessage", "Connected");
             } else if(co == 2){
                 // On change l'icone du bouton
@@ -434,6 +434,8 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
     public static class LagFragment extends Fragment {
         Button g_btnLag = null;
+        int g_iLagVal = 0;
+        TextView g_txtRes = null;
 
         @Nullable
         @Override
@@ -446,6 +448,80 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 @Override
                 public void onClick(View v) {
                     if (g_bConnected) g_btCom.sendCommand((byte) 6, 0);
+                }
+            });
+
+            // Checkboxes
+            g_txtRes = (TextView)l_view.findViewById(R.id.txtResult);
+            CheckBox g_check0 = (CheckBox)l_view.findViewById(R.id.checkBox0);
+            g_check0.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    g_iLagVal += isChecked?1:-1;
+                    g_txtRes.setText(Integer.toString(g_iLagVal));
+                }
+            });
+
+            CheckBox g_check1 = (CheckBox)l_view.findViewById(R.id.checkBox1);
+            g_check1.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    g_iLagVal += isChecked?2:-2;
+                    g_txtRes.setText(Integer.toString(g_iLagVal));
+                }
+            });
+
+            CheckBox g_check2 = (CheckBox)l_view.findViewById(R.id.checkBox2);
+            g_check2.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    g_iLagVal += isChecked?4:-4;
+                    g_txtRes.setText(Integer.toString(g_iLagVal));
+                }
+            });
+
+            CheckBox g_check3 = (CheckBox)l_view.findViewById(R.id.checkBox3);
+            g_check3.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    g_iLagVal += isChecked?8:-8;
+                    g_txtRes.setText(Integer.toString(g_iLagVal));
+                }
+            });
+
+            CheckBox g_check4 = (CheckBox)l_view.findViewById(R.id.checkBox4);
+            g_check4.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    g_iLagVal += isChecked?16:-16;
+                    g_txtRes.setText(Integer.toString(g_iLagVal));
+                }
+            });
+
+            CheckBox g_check5 = (CheckBox)l_view.findViewById(R.id.checkBox5);
+            g_check5.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    g_iLagVal += isChecked?32:-32;
+                    g_txtRes.setText(Integer.toString(g_iLagVal));
+                }
+            });
+
+            CheckBox g_check6 = (CheckBox)l_view.findViewById(R.id.checkBox6);
+            g_check6.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    g_iLagVal += isChecked?64:-64;
+                    g_txtRes.setText(Integer.toString(g_iLagVal));
+                }
+            });
+
+            CheckBox g_check7 = (CheckBox)l_view.findViewById(R.id.checkBox7);
+            g_check7.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    g_iLagVal += isChecked?128:-128;
+                    g_txtRes.setText(Integer.toString(g_iLagVal));
                 }
             });
 
