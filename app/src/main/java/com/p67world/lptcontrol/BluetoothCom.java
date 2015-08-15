@@ -23,7 +23,6 @@ public class BluetoothCom {
     private OutputStream g_btSendStream = null;// Canal d'émission
     private BluetoothDevice g_btDevice = null;
     private BluetoothSocket g_btSocket = null;
-    private BluetoothAdapter g_btAdapter = null;    // Adapter Bluetooth
     private ReceiverThread g_btReceiverThread;
     Handler g_handler;
 
@@ -36,14 +35,13 @@ public class BluetoothCom {
 
 
     public BluetoothCom(Handler hstatus, Handler h) {
-        g_btAdapter = BluetoothAdapter.getDefaultAdapter();
         g_handler = hstatus;
 
         // Thread de réception
         g_btReceiverThread = new ReceiverThread(h);
     }
 
-    public void connect(BluetoothDevice device){
+    public void connect(final BluetoothDevice device){
         // On récupère le device
         g_btDevice = device;
 
@@ -60,18 +58,42 @@ public class BluetoothCom {
 
                 try{
                     g_btReceiveStream = g_btSocket.getInputStream();
-                    g_btSendStream = g_btSocket.getOutputStream();
-
-                    g_btSocket.connect();
-
-                    Message msg = g_handler.obtainMessage();
-                    msg.arg1 = 1;
-                    g_handler.sendMessage(msg);
-
-                    g_btReceiverThread.start();
                 } catch (IOException e){
                     e.printStackTrace();
                 }
+
+                try{
+                    g_btSendStream = g_btSocket.getOutputStream();
+                } catch (IOException e){
+                    e.printStackTrace();
+                }
+
+                Log.d("MESSAGE", "Tentative de connexion");
+                try{
+                    g_btSocket.connect();
+                    Log.d("MESSAGE", "Connecté");
+                } catch (IOException e){
+                    // Workaround for IOException at connexion
+                    Log.d("MESSAGE", e.getMessage());
+                    try {
+                        Log.d("MESSAGE", "Trying fallback...");
+
+                        //g_btSocket = (BluetoothSocket) device.getClass().getMethod("createRfcommSocket", new Class[]{int.class}).invoke(device, 1);
+                        Thread.sleep(500);
+                        g_btSocket.connect();
+
+                        Log.d("MESSAGE", "Connecté après fallback");
+                    }
+                    catch(Exception e2){
+                        Log.d("MESSAGE", "Impossible d'établir la connexion Bluetooth!");
+                    }
+                }
+
+                Message msg = g_handler.obtainMessage();
+                msg.arg1 = 1;
+                g_handler.sendMessage(msg);
+
+                g_btReceiverThread.start();
             }
         }.start();
     }
@@ -99,9 +121,14 @@ public class BluetoothCom {
         data[5] = (byte)(data[0]+data[1]+data[2]+data[3]+data[4]);
 
         StringBuilder sb = new StringBuilder(data.length * 2);
-        for(byte b:data)sb.append(String.format("%02x", b & 0xff));
+        for(byte b:data)sb.append(String.format("%02x ", b & 0xff));
         Log.d("MESSAGE SENT", sb.toString());
         sendBinaryData(data);
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     public void sendData(String data) {
@@ -138,9 +165,9 @@ public class BluetoothCom {
             while(true) {
                 try {
                     if(g_btReceiveStream.available() > 0) {
-
                         byte buffer[] = new byte[100];
-                        int k = g_btReceiveStream.read(buffer, 0, 100);
+
+                        int k = g_btReceiveStream.read(buffer, 0, g_btReceiveStream.available());
 
                         if(k > 0) {
                             byte rawdata[] = new byte[k];

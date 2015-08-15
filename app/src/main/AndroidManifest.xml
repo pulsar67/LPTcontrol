@@ -24,7 +24,7 @@
 
         <activity android:name=".DeviceListActivity"
             android:configChanges="orientation|keyboardHidden"
-            android:label="Sélection du périphérique"
+            android:label="Recherche en cours..."
             android:theme="@android:style/Theme.Holo.Dialog"/>
     </application>
 

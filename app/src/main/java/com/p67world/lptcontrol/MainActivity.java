@@ -6,7 +6,6 @@ import android.app.Activity;
 import android.app.FragmentTransaction;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.Context;
@@ -38,6 +37,7 @@ import android.widget.Toast;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.Set;
 import java.util.UUID;
 import android.os.Handler;
@@ -47,48 +47,48 @@ import org.w3c.dom.Text;
 
 public class MainActivity extends FragmentActivity implements ActionBar.TabListener {
     // LPT protocol
-    private static final byte LPT_SET_SENSITIVITY_MIN = 1;
-    private static final byte LPT_SET_SENSITIVITY_MAX = 2;
-    private static final byte LPT_SET_INHIBITION =		3;
-    private static final byte LPT_SET_LAG =				4;
-    private static final byte LPT_SET_SENSOR =			5;
-    private static final byte LPT_SET_START_LAG =		6;
-    private static final byte LPT_SET_MANUAL_SHUTTER =	7;
-    private static final byte LPT_SET_MANUAL_STOP =		8;
-    private static final byte LPT_SET_PWM_LED =			9;
-    private static final byte LPT_SET_INTER_NB_POSES =	10;
-    private static final byte LPT_SET_INTER_SHUTTER =	11;
-    private static final byte LPT_SET_INTER_INTERVAL =	12;
-    private static final byte LPT_SET_INTER_DELAY =		13;
-    private static final byte LPT_SET_INTER_START =		14;
-    private static final byte LPT_SET_INTER_STOP =		15;
-    private static final byte LPT_SET_CUR_SENSITIVITY = 16;
-    private static final byte LPT_SET_PREFOCUS =		17;
+    private static final byte LPT_SET_SENSITIVITY_MIN = 0x01;
+    private static final byte LPT_SET_SENSITIVITY_MAX = 0x02;
+    private static final byte LPT_SET_INHIBITION =		0x03;
+    private static final byte LPT_SET_LAG =				0x04;
+    private static final byte LPT_SET_SENSOR =			0x05;
+    private static final byte LPT_SET_START_LAG =		0x06;
+    private static final byte LPT_SET_MANUAL_SHUTTER =	0x07;
+    private static final byte LPT_SET_MANUAL_STOP =		0x08;
+    private static final byte LPT_SET_PWM_LED =			0x09;
+    private static final byte LPT_SET_INTER_NB_POSES =	0x0A;
+    private static final byte LPT_SET_INTER_SHUTTER =	0x0B;
+    private static final byte LPT_SET_INTER_INTERVAL =	0x0C;
+    private static final byte LPT_SET_INTER_DELAY =		0x0D;
+    private static final byte LPT_SET_INTER_START =		0x0E;
+    private static final byte LPT_SET_INTER_STOP =		0x0F;
+    private static final byte LPT_SET_CUR_SENSITIVITY = 0x10;
+    private static final byte LPT_SET_PREFOCUS =		0x11;
 
-    private static final byte LPT_GET_CHARGING =		(byte)128;
-    private static final byte LPT_GET_SENSITIVITY_MIN = (byte)129;
-    private static final byte LPT_GET_SENSITIVITY_MAX = (byte)130;
-    private static final byte LPT_GET_INHIBITION =		(byte)131;
-    private static final byte LPT_GET_LAG =				(byte)132;
-    private static final byte LPT_GET_SENSOR =			(byte)133;
-    private static final byte LPT_GET_FW_VERSION =		(byte)134;
-    private static final byte LPT_GET_PWM_LED =			(byte)135;
-    private static final byte LPT_GET_INTER_NB_POSES =	(byte)136;
-    private static final byte LPT_GET_INTER_SHUTTER =	(byte)137;
-    private static final byte LPT_GET_INTER_INTERVAL =	(byte)138;
-    private static final byte LPT_GET_INTER_DELAY =		(byte)139;
-    private static final byte LPT_GET_INTER_CURR_STAT =	(byte)140; // Indique si l'intervallomètre est démarré, si on a une pose en cours ou si
-    private static final byte LPT_GET_INTER_CURR_NB =	(byte)141;
-    private static final byte LPT_GET_CUR_SENSITIVITY = (byte)142;
-    private static final byte LPT_GET_PREFOCUS =		(byte)143;
-    private static final byte LPT_GET_BATT_LVL =		(byte)144;
-    private static final byte LPT_GET_STRIKE_NB =		(byte)145;
-    private static final byte LPT_GET_STRIKE_VAL =		(byte)146;
+    private static final byte LPT_GET_CHARGING =		(byte)0x80;
+    private static final byte LPT_GET_SENSITIVITY_MIN = (byte)0x81;
+    private static final byte LPT_GET_SENSITIVITY_MAX = (byte)0x82;
+    private static final byte LPT_GET_INHIBITION =		(byte)0x83;
+    private static final byte LPT_GET_LAG =				(byte)0x84;
+    private static final byte LPT_GET_SENSOR =			(byte)0x85;
+    private static final byte LPT_GET_FW_VERSION =		(byte)0x86;
+    private static final byte LPT_GET_PWM_LED =			(byte)0x87;
+    private static final byte LPT_GET_INTER_NB_POSES =	(byte)0x88;
+    private static final byte LPT_GET_INTER_SHUTTER =	(byte)0x89;
+    private static final byte LPT_GET_INTER_INTERVAL =	(byte)0x8A;
+    private static final byte LPT_GET_INTER_DELAY =		(byte)0x8B;
+    private static final byte LPT_GET_INTER_CURR_STAT =	(byte)0x8C; // Indique si l'intervallomètre est démarré, si on a une pose en cours ou si
+    private static final byte LPT_GET_INTER_CURR_NB =	(byte)0x8D;
+    private static final byte LPT_GET_CUR_SENSITIVITY = (byte)0x8E;
+    private static final byte LPT_GET_PREFOCUS =		(byte)0x8F;
+    private static final byte LPT_GET_BATT_LVL =		(byte)0x90;
+    private static final byte LPT_GET_STRIKE_NB =		(byte)0x91;
+    private static final byte LPT_GET_STRIKE_VAL =		(byte)0x92;
 
-    private static final byte LPT_INTER_STATE_INACTIVE =	1;
-    private static final byte LPT_INTER_STATE_WAIT_START =	2;
-    private static final byte LPT_INTER_STATE_WAIT_NEXT =	4;
-    private static final byte LPT_INTER_STATE_ACTIVE =		3;
+    private static final byte LPT_INTER_STATE_INACTIVE =	0x01;
+    private static final byte LPT_INTER_STATE_WAIT_START =	0x02;
+    private static final byte LPT_INTER_STATE_WAIT_NEXT =	0x04;
+    private static final byte LPT_INTER_STATE_ACTIVE =		0x03;
 
     // Request codes
     private static final int REQUEST_CONNECT_BT = 1;
@@ -112,20 +112,89 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
     private int g_iBufferPos = 0;
 
     private void manageCom(byte[] data){
+        byte[] l_bTempValue = { data[1], data[2], data[3], data[4]};
+        int l_iTempValue = ByteBuffer.wrap(l_bTempValue).getInt();
         switch(data[0]){
-            case LPT_GET_CUR_SENSITIVITY:
-                SeekBar seekSens = (SeekBar)findViewById(R.id.seekSensitivity);
-                seekSens.setProgress(g_ReceivedBuffer[4]);
+            case LPT_GET_CHARGING:
+                break;
+            case LPT_GET_SENSITIVITY_MIN:
+                break;
+            case LPT_GET_SENSITIVITY_MAX:
+                break;
+            case LPT_GET_INHIBITION:
+                SeekBar seekInhib = (SeekBar)findViewById(R.id.seekInhibition);
+                int iInhibitVal = l_iTempValue/100;
+                seekInhib.setProgress((iInhibitVal < 100) ? iInhibitVal:100);
+                break;
+            case LPT_GET_LAG:
+                break;
+            case LPT_GET_SENSOR:
+                break;
+            case LPT_GET_FW_VERSION:
                 break;
             case LPT_GET_PWM_LED:
                 SeekBar seekLum = (SeekBar)findViewById(R.id.seekLedLuminosity);
-                seekLum.setProgress(g_ReceivedBuffer[4]);
+                seekLum.setProgress(l_iTempValue);
+                break;
+            case LPT_GET_INTER_NB_POSES:
+                SeekBar seekInterNumber = (SeekBar)findViewById(R.id.seekInterNumber);
+                seekInterNumber.setProgress(l_iTempValue);
+                break;
+            case LPT_GET_INTER_SHUTTER:
+                SeekBar seekInterShutter = (SeekBar)findViewById(R.id.seekInterShutter);
+                seekInterShutter.setProgress(l_iTempValue);
+                break;
+            case LPT_GET_INTER_INTERVAL:
+                SeekBar seekInterInterval = (SeekBar)findViewById(R.id.seekInterInterval);
+                seekInterInterval.setProgress(l_iTempValue);
+                break;
+            case LPT_GET_INTER_DELAY:
+                SeekBar seekInterStart = (SeekBar)findViewById(R.id.seekInterStart);
+                seekInterStart.setProgress(l_iTempValue);
+                break;
+            case LPT_GET_INTER_CURR_STAT:
+                Button l_btnInterStart = (Button)findViewById(R.id.btnInterStart);
+                switch(l_iTempValue){
+                    case LPT_INTER_STATE_ACTIVE:
+                        l_btnInterStart.setText("Arrêt");
+                        break;
+                    case LPT_INTER_STATE_INACTIVE:
+                        l_btnInterStart.setText("Démarrage");
+                        break;
+                    case LPT_INTER_STATE_WAIT_NEXT:
+                        l_btnInterStart.setText("Arrêt");
+                        break;
+                    case LPT_INTER_STATE_WAIT_START:
+                        l_btnInterStart.setText("Arrêt");
+                        break;
+                }
+                break;
+            case LPT_GET_INTER_CURR_NB:
+                break;
+            case LPT_GET_CUR_SENSITIVITY:
+                SeekBar seekSens = (SeekBar)findViewById(R.id.seekSensitivity);
+                seekSens.setProgress(l_iTempValue);
                 break;
             case LPT_GET_PREFOCUS:
                 CheckBox checkPrefocus = (CheckBox)findViewById(R.id.checkPrefocus);
-                checkPrefocus.setChecked(g_ReceivedBuffer[4]==1);
+                checkPrefocus.setChecked(l_iTempValue==1);
+                break;
+            case LPT_GET_BATT_LVL:
+                break;
+            case LPT_GET_STRIKE_NB:
+                break;
+            case LPT_GET_STRIKE_VAL:
                 break;
         }
+    }
+
+    // Afficher un texte en sous-titre...
+    private void setStatus(String subtitle) {
+        final ActionBar actionBar = getActionBar();
+        if (null == actionBar) {
+            return;
+        }
+        actionBar.setSubtitle(subtitle);
     }
 
     final Handler handler = new Handler() {
@@ -166,15 +235,37 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 // On change l'icone du bouton
                 MenuItem btn = g_menu.findItem(R.id.connectBtn);
                 btn.setIcon(R.drawable.bt_icon_c);
+                setStatus("Connecté");
                 g_bConnected = true;
-                //g_btCom.sendCommand(LPT_GET_CUR_SENSITIVITY, 0);
-                //g_btCom.sendCommand(LPT_GET_PREFOCUS, 0);
+                switch(g_viewPager.getCurrentItem())
+                {
+                    case 0:
+                        g_btCom.sendCommand(LPT_GET_PWM_LED, 0);
+                        g_btCom.sendCommand(LPT_GET_CUR_SENSITIVITY, 0);
+                        g_btCom.sendCommand(LPT_GET_INHIBITION, 0);
+                        g_btCom.sendCommand(LPT_GET_PREFOCUS, 0);
+                        break;
+                    case 1:
+                        g_btCom.sendCommand(LPT_GET_INTER_CURR_STAT, 0);
+                        g_btCom.sendCommand(LPT_GET_INTER_DELAY, 0);
+                        g_btCom.sendCommand(LPT_GET_INTER_SHUTTER, 0);
+                        g_btCom.sendCommand(LPT_GET_INTER_INTERVAL, 0);
+                        g_btCom.sendCommand(LPT_GET_INTER_NB_POSES, 0);
+                        break;
+                    default:
+                        Log.d("MESSAGE", "Onglet Lag");
+                        break;
+                }
+                Toast.makeText(getApplicationContext(), "Connecté au LPT avec succès!",
+                        Toast.LENGTH_SHORT).show();
                 Log.d("handlemessage", "Connected");
             } else if(co == 2){
                 // On change l'icone du bouton
                 MenuItem btn = g_menu.findItem(R.id.connectBtn);
                 btn.setIcon(R.drawable.bt_icon_n);
                 g_bConnected = true;
+                Toast.makeText(getApplicationContext(), "Connexion avec le LPT perdue!",
+                        Toast.LENGTH_SHORT).show();
                 Log.d("handlemessage", "Disconnected");
             }
         }
@@ -221,6 +312,8 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         }
     }
 
+
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -248,6 +341,26 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
     @Override
     public void onTabSelected(ActionBar.Tab tab, FragmentTransaction ft) {
         g_viewPager.setCurrentItem(tab.getPosition());
+
+        if(g_bConnected) {
+            switch (tab.getPosition()) {
+                case 0:
+                    g_btCom.sendCommand(LPT_GET_PWM_LED, 0);
+                    g_btCom.sendCommand(LPT_GET_CUR_SENSITIVITY, 0);
+                    g_btCom.sendCommand(LPT_GET_INHIBITION, 0);
+                    g_btCom.sendCommand(LPT_GET_PREFOCUS, 0);
+                    break;
+                case 1:
+                    g_btCom.sendCommand(LPT_GET_INTER_CURR_STAT, 0);
+                    g_btCom.sendCommand(LPT_GET_INTER_DELAY, 0);
+                    g_btCom.sendCommand(LPT_GET_INTER_SHUTTER, 0);
+                    g_btCom.sendCommand(LPT_GET_INTER_INTERVAL, 0);
+                    g_btCom.sendCommand(LPT_GET_INTER_NB_POSES, 0);
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 
     @Override
@@ -286,8 +399,6 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             case REQUEST_CONNECT_BT:
                 // Si on retourne avec un device à connecter
                 if(resultCode == Activity.RESULT_OK){
-                    g_btAdapter.cancelDiscovery();
-
                     // Création du BluetoothCom
                     g_btCom = new BluetoothCom(handlerStatus, handler);
 
@@ -340,12 +451,12 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
             // Luminosité LEDs
             g_seekLedLum = (SeekBar)l_view.findViewById(R.id.seekLedLuminosity);
-            g_seekLedLum.setMax(10);
+            g_seekLedLum.setMax(100);
             g_seekLedLum.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                     TextView text = (TextView)l_view.findViewById(R.id.valLedLum);
-                    String val = Integer.toString(progress*10) + "%";
+                    String val = Integer.toString(progress) + "%";
                     text.setText(val);
                 }
 
@@ -356,17 +467,13 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
                 @Override
                 public void onStopTrackingTouch(SeekBar seekBar) {
-                    if (g_bConnected) g_btCom.sendCommand((byte) 9, seekBar.getProgress() * 10);
+                    if (g_bConnected) g_btCom.sendCommand(LPT_SET_PWM_LED, seekBar.getProgress());
                 }
             });
 
             // Sensibilité
             g_seekSensitivity = (SeekBar)l_view.findViewById(R.id.seekSensitivity);
             g_seekSensitivity.setMax(4);
-            if(g_bConnected){
-                g_btCom.sendCommand(LPT_GET_CUR_SENSITIVITY, 0);
-            }
-
             g_seekSensitivity.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -381,7 +488,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
                 @Override
                 public void onStopTrackingTouch(SeekBar seekBar) {
-                    if (g_bConnected) g_btCom.sendCommand((byte) 16, seekBar.getProgress());
+                    if (g_bConnected) g_btCom.sendCommand(LPT_SET_CUR_SENSITIVITY, seekBar.getProgress());
                 }
             });
 
@@ -391,8 +498,8 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             g_seekInhibit.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                    TextView text = (TextView)l_view.findViewById(R.id.valInhibit);
-                    String val = Integer.toString(progress*100) + "ms";
+                    TextView text = (TextView) l_view.findViewById(R.id.valInhibit);
+                    String val = Integer.toString(progress * 100) + "ms";
                     text.setText(val);
                 }
 
@@ -403,19 +510,18 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
                 @Override
                 public void onStopTrackingTouch(SeekBar seekBar) {
-                    if (g_bConnected) g_btCom.sendCommand((byte) 3, seekBar.getProgress()*100);
+                    if (g_bConnected) g_btCom.sendCommand(LPT_SET_INHIBITION, seekBar.getProgress()*100);
                 }
             });
 
             // Préfocus
             g_checkPrefocus = (CheckBox)l_view.findViewById(R.id.checkPrefocus);
-            if(g_bConnected){
-                g_btCom.sendCommand(LPT_GET_PREFOCUS, 0);
-            }
-            g_checkPrefocus.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            g_checkPrefocus.setOnClickListener(new View.OnClickListener() {
                 @Override
-                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    if (g_bConnected) g_btCom.sendCommand((byte) 17, isChecked?1:0);
+                public void onClick(View v) {
+                    if (g_bConnected) {
+                        g_btCom.sendCommand(LPT_SET_PREFOCUS, g_checkPrefocus.isChecked()?1:0);
+                    }
                 }
             });
 
@@ -431,13 +537,14 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
             // Seekbars de réglages
             SeekBar g_seekInterStart = (SeekBar)l_view.findViewById(R.id.seekInterStart);
-            g_seekInterStart.setMax(999);
+            g_seekInterStart.setMax(60);
             g_seekInterStart.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                     TextView text = (TextView) l_view.findViewById(R.id.txtInterStart);
                     String val = Integer.toString(progress) + " s";
                     text.setText(val);
+                    if(g_bConnected)g_btCom.sendCommand(LPT_SET_INTER_DELAY, progress);
                 }
 
                 @Override
@@ -452,13 +559,14 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             });
 
             SeekBar g_seekInterShutter = (SeekBar)l_view.findViewById(R.id.seekInterShutter);
-            g_seekInterShutter.setMax(999);
+            g_seekInterShutter.setMax(60);
             g_seekInterShutter.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                     TextView text = (TextView) l_view.findViewById(R.id.txtInterShutter);
                     String val = Integer.toString(progress) + " s";
                     text.setText(val);
+                    if(g_bConnected)g_btCom.sendCommand(LPT_SET_INTER_SHUTTER, progress);
                 }
 
                 @Override
@@ -473,13 +581,14 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             });
 
             SeekBar g_seekInterInterval = (SeekBar)l_view.findViewById(R.id.seekInterInterval);
-            g_seekInterInterval.setMax(999);
+            g_seekInterInterval.setMax(300);
             g_seekInterInterval.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                     TextView text = (TextView) l_view.findViewById(R.id.txtInterInterval);
                     String val = Integer.toString(progress) + " s";
                     text.setText(val);
+                    if(g_bConnected)g_btCom.sendCommand(LPT_SET_INTER_INTERVAL, progress);
                 }
 
                 @Override
@@ -494,12 +603,13 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             });
 
             SeekBar g_seekInterNumber = (SeekBar)l_view.findViewById(R.id.seekInterNumber);
-            g_seekInterNumber.setMax(999);
+            g_seekInterNumber.setMax(99);
             g_seekInterNumber.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                    TextView text = (TextView)l_view.findViewById(R.id.txtInterNumber);
-                    text.setText(Integer.toString(progress));
+                    TextView text = (TextView) l_view.findViewById(R.id.txtInterNumber);
+                    text.setText(progress > 0 ? Integer.toString(progress) : "INF");
+                    if(g_bConnected) g_btCom.sendCommand(LPT_SET_INTER_NB_POSES, progress);
                 }
 
                 @Override
@@ -509,6 +619,25 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
                 @Override
                 public void onStopTrackingTouch(SeekBar seekBar) {
+
+                }
+            });
+
+            final Button g_btnInterStart = (Button)l_view.findViewById(R.id.btnInterStart);
+            g_btnInterStart.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if(g_bConnected){
+                        if(g_btnInterStart.getText() == "Arrêt"){
+                            g_btCom.sendCommand(LPT_SET_INTER_STOP, 0);
+                            g_btnInterStart.setText("Démarrage");
+                        }
+                        else{
+                            g_btCom.sendCommand(LPT_SET_INTER_START, 0);
+                            g_btnInterStart.setText("Arrêt");
+                        }
+                    }
+
 
                 }
             });

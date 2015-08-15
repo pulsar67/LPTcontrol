@@ -61,14 +61,8 @@ public class DeviceListActivity extends Activity{
         // Récupération de l'adaptateur local
         g_btAdapter = BluetoothAdapter.getDefaultAdapter();
 
-        // Initialiser le bouton pour faire l'analyse
-        Button scanButton = (Button) findViewById(R.id.button_scan);
-        scanButton.setOnClickListener(new View.OnClickListener() {
-        public void onClick(View v) {
-            doDiscovery();
-        v.setVisibility(View.GONE);
-        }
-        });
+        // Lancement du scan
+        doDiscovery();
     }
 
     @Override
@@ -91,6 +85,10 @@ public class DeviceListActivity extends Activity{
             g_btAdapter.cancelDiscovery();
         }
 
+        //
+        setProgressBarIndeterminateVisibility(true);
+        setTitle("Recherche en cours...");
+
         // On lance la découverte
         g_btAdapter.startDiscovery();
     }
@@ -100,11 +98,12 @@ public class DeviceListActivity extends Activity{
             = new AdapterView.OnItemClickListener() {
         public void onItemClick(AdapterView<?> av, View v, int arg2, long arg3) {
             // Cancel discovery because it's costly and we're about to connect
-            if(g_btAdapter.isDiscovering())
-            {
-                g_btAdapter.cancelDiscovery();
+            g_btAdapter.cancelDiscovery();
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-
 
             // Get the device MAC address, which is the last 17 chars in the View
             String info = ((TextView) v).getText().toString();
@@ -141,7 +140,7 @@ public class DeviceListActivity extends Activity{
                 setProgressBarIndeterminateVisibility(false);
                 setTitle("Cliquer sur le LPT a connecter");
                 if (g_devicesArrayAdapter.getCount() == 0) {
-                    String noDevices = "Aucun peripherique trouve";
+                    String noDevices = "Aucun périphérique trouvé";
                     g_devicesArrayAdapter.add(noDevices);
                 }
             }
