@@ -25,6 +25,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -38,6 +39,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Set;
 import java.util.UUID;
 import android.os.Handler;
@@ -110,12 +112,33 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
     private long lastTime = 0;
     private byte[] g_ReceivedBuffer = new byte[6];
     private int g_iBufferPos = 0;
+    private int g_iBattLvl = 0;
+    private boolean g_bCharging = false;
 
     private void manageCom(byte[] data){
         byte[] l_bTempValue = { data[1], data[2], data[3], data[4]};
         int l_iTempValue = ByteBuffer.wrap(l_bTempValue).getInt();
         switch(data[0]){
             case LPT_GET_CHARGING:
+                g_bCharging = l_iTempValue!=0?true:false;
+                MenuItem l_chBattIcon = g_menu.findItem(R.id.battIcon);
+                switch(g_iBattLvl){
+                    case 1:
+                        l_chBattIcon.setIcon(g_bCharging?R.drawable.batt1ch:R.drawable.batt1);
+                        break;
+                    case 2:
+                        l_chBattIcon.setIcon(g_bCharging?R.drawable.batt2ch:R.drawable.batt2);
+                        break;
+                    case 3:
+                        l_chBattIcon.setIcon(g_bCharging?R.drawable.batt3ch:R.drawable.batt3);
+                        break;
+                    case 4:
+                        l_chBattIcon.setIcon(g_bCharging?R.drawable.batt4ch:R.drawable.batt4);
+                        break;
+                    default:
+                        l_chBattIcon.setIcon(g_bCharging?R.drawable.batt0ch:R.drawable.batt0);
+                        break;
+                }
                 break;
             case LPT_GET_SENSITIVITY_MIN:
                 break;
@@ -131,6 +154,12 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             case LPT_GET_SENSOR:
                 break;
             case LPT_GET_FW_VERSION:
+                //byte[] l_maj = {data[1], data[2]};
+                int l_iMaj = (data[1] & 0xFF) << 8 | (data[2] & 0xFF);
+                int l_iMin = (data[3] & 0xFF) << 8 | (data[4] & 0xFF);
+                String str = "Firm.\nv" + Integer.toString(l_iMaj) + "." + Integer.toString(l_iMin);
+                MenuItem l_firmTxt = g_menu.findItem(R.id.firmTxt);
+                l_firmTxt.setTitle(str);
                 break;
             case LPT_GET_PWM_LED:
                 SeekBar seekLum = (SeekBar)findViewById(R.id.seekLedLuminosity);
@@ -180,6 +209,25 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 checkPrefocus.setChecked(l_iTempValue==1);
                 break;
             case LPT_GET_BATT_LVL:
+                g_iBattLvl = l_iTempValue;
+                MenuItem l_lvlBattIcon = g_menu.findItem(R.id.battIcon);
+                switch(g_iBattLvl){
+                    case 1:
+                        l_lvlBattIcon.setIcon(g_bCharging?R.drawable.batt1ch:R.drawable.batt1);
+                        break;
+                    case 2:
+                        l_lvlBattIcon.setIcon(g_bCharging?R.drawable.batt2ch:R.drawable.batt2);
+                        break;
+                    case 3:
+                        l_lvlBattIcon.setIcon(g_bCharging?R.drawable.batt3ch:R.drawable.batt3);
+                        break;
+                    case 4:
+                        l_lvlBattIcon.setIcon(g_bCharging?R.drawable.batt4ch:R.drawable.batt4);
+                        break;
+                    default:
+                        l_lvlBattIcon.setIcon(g_bCharging?R.drawable.batt0ch:R.drawable.batt0);
+                        break;
+                }
                 break;
             case LPT_GET_STRIKE_NB:
                 break;
@@ -237,6 +285,12 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 btn.setIcon(R.drawable.bt_icon_c);
                 setStatus("Connecté");
                 g_bConnected = true;
+
+                // Commandes de status
+                g_btCom.sendCommand(LPT_GET_FW_VERSION, 0);
+                g_btCom.sendCommand(LPT_GET_BATT_LVL, 0);
+                g_btCom.sendCommand(LPT_GET_CHARGING, 0);
+
                 switch(g_viewPager.getCurrentItem())
                 {
                     case 0:
@@ -301,8 +355,12 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
         // Ajout des onglets
         actionBar.addTab(actionBar.newTab().setText("GENERAL").setTabListener(this));
-        actionBar.addTab(actionBar.newTab().setText("INTER.").setTabListener(this));
+        actionBar.addTab(actionBar.newTab().setText("INTERVALLOMETRE").setTabListener(this));
         actionBar.addTab(actionBar.newTab().setText("LAG").setTabListener(this));
+
+        // Sous-titre
+        setStatus("Non connecté");
+
 
         // Vérification si on a le BT
         if(BluetoothAdapter.getDefaultAdapter() == null){
@@ -345,10 +403,10 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         if(g_bConnected) {
             switch (tab.getPosition()) {
                 case 0:
-                    g_btCom.sendCommand(LPT_GET_PWM_LED, 0);
-                    g_btCom.sendCommand(LPT_GET_CUR_SENSITIVITY, 0);
-                    g_btCom.sendCommand(LPT_GET_INHIBITION, 0);
-                    g_btCom.sendCommand(LPT_GET_PREFOCUS, 0);
+                    //g_btCom.sendCommand(LPT_GET_PWM_LED, 0);
+                    //g_btCom.sendCommand(LPT_GET_CUR_SENSITIVITY, 0);
+                    //g_btCom.sendCommand(LPT_GET_INHIBITION, 0);
+                    //g_btCom.sendCommand(LPT_GET_PREFOCUS, 0);
                     break;
                 case 1:
                     g_btCom.sendCommand(LPT_GET_INTER_CURR_STAT, 0);
@@ -448,6 +506,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
             final View l_view = inflater.inflate(R.layout.fragment_general, container, false);
+
 
             // Luminosité LEDs
             g_seekLedLum = (SeekBar)l_view.findViewById(R.id.seekLedLuminosity);

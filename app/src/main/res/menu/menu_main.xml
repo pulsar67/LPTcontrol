@@ -2,9 +2,19 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     tools:context=".MainActivity">
+
+    <item android:id="@+id/firmTxt"
+        android:showAsAction="always"
+        android:title="Firm.\nN/A"/>
+
+    <item android:id="@+id/battIcon"
+        android:icon="@drawable/batt0"
+        android:showAsAction="always"
+        android:title="Battery"/>
+
     <item android:id="@+id/connectBtn"
         android:icon="@drawable/bt_icon_n"
-        android:showAsAction="ifRoom"
+        android:showAsAction="always"
         android:title="Connect"
         android:onClick="onBtClick"/>
 </menu>
