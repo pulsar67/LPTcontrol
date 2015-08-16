@@ -399,14 +399,22 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
     @Override
     public void onTabSelected(ActionBar.Tab tab, FragmentTransaction ft) {
         g_viewPager.setCurrentItem(tab.getPosition());
+    }
 
+    @Override
+    public void onTabUnselected(ActionBar.Tab tab, FragmentTransaction ft) {
+
+    }
+
+    @Override
+    public void onTabReselected(ActionBar.Tab tab, FragmentTransaction ft) {
         if(g_bConnected) {
             switch (tab.getPosition()) {
                 case 0:
-                    //g_btCom.sendCommand(LPT_GET_PWM_LED, 0);
-                    //g_btCom.sendCommand(LPT_GET_CUR_SENSITIVITY, 0);
-                    //g_btCom.sendCommand(LPT_GET_INHIBITION, 0);
-                    //g_btCom.sendCommand(LPT_GET_PREFOCUS, 0);
+                    g_btCom.sendCommand(LPT_GET_PWM_LED, 0);
+                    g_btCom.sendCommand(LPT_GET_CUR_SENSITIVITY, 0);
+                    g_btCom.sendCommand(LPT_GET_INHIBITION, 0);
+                    g_btCom.sendCommand(LPT_GET_PREFOCUS, 0);
                     break;
                 case 1:
                     g_btCom.sendCommand(LPT_GET_INTER_CURR_STAT, 0);
@@ -419,16 +427,6 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                     break;
             }
         }
-    }
-
-    @Override
-    public void onTabUnselected(ActionBar.Tab tab, FragmentTransaction ft) {
-
-    }
-
-    @Override
-    public void onTabReselected(ActionBar.Tab tab, FragmentTransaction ft) {
-
     }
 
     public void onBtClick(MenuItem item) {
