@@ -19,10 +19,12 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -41,6 +43,8 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 import android.os.Handler;
 
@@ -102,7 +106,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
     AppSectionsPagerAdapter g_pagerAdapter;
 
     // Permet de lier l'onglet au fragment concerner
-    ViewPager g_viewPager;
+    NonSwipeableViewPager g_viewPager;
 
     // Socket Bluetooth
     private static BluetoothCom g_btCom;
@@ -114,6 +118,14 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
     private int g_iBufferPos = 0;
     private int g_iBattLvl = 0;
     private boolean g_bCharging = false;
+    private boolean g_bInterActive = false;
+    private Handler g_timeHandler = new Handler();
+    private int g_iCurrentInterStatus = LPT_INTER_STATE_INACTIVE;
+    private int g_iPreviousInterStatus = LPT_INTER_STATE_INACTIVE;
+    private int g_iInterTimeCounter = 0;
+    private static int g_iInterNbPoses = 0;
+    private int g_iInterCurrPose = 0;
+
 
     private void manageCom(byte[] data){
         byte[] l_bTempValue = { data[1], data[2], data[3], data[4]};
@@ -168,6 +180,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             case LPT_GET_INTER_NB_POSES:
                 SeekBar seekInterNumber = (SeekBar)findViewById(R.id.seekInterNumber);
                 seekInterNumber.setProgress(l_iTempValue);
+                g_iInterNbPoses = l_iTempValue;
                 break;
             case LPT_GET_INTER_SHUTTER:
                 SeekBar seekInterShutter = (SeekBar)findViewById(R.id.seekInterShutter);
@@ -183,22 +196,60 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 break;
             case LPT_GET_INTER_CURR_STAT:
                 Button l_btnInterStart = (Button)findViewById(R.id.btnInterStart);
+                if(l_btnInterStart == null) Log.d("MESSAGE", "!!!! NULL !!!!!");
+                g_iCurrentInterStatus = l_iTempValue;
+
                 switch(l_iTempValue){
                     case LPT_INTER_STATE_ACTIVE:
                         l_btnInterStart.setText("Arrêt");
+
+                        // SI c'est actif, on sélectionne l'onglet "intervallomètre"
+                        getActionBar().setSelectedNavigationItem(1);
+                        g_viewPager.setCurrentItem(1);
+
+                        // On poste le message
+                        g_timeHandler.removeCallbacks(g_tTimerTask);
+                        g_timeHandler.postDelayed(g_tTimerTask, 0);
                         break;
                     case LPT_INTER_STATE_INACTIVE:
+                        g_bInterActive = false;
                         l_btnInterStart.setText("Démarrage");
+
+                        // On stoppe le timer
+                        g_timeHandler.removeCallbacks(g_tTimerTask);
+
+                        // On efface
+                        MenuItem l_interStat = g_menu.findItem(R.id.interStat);
+                        l_interStat.setTitle("");
                         break;
                     case LPT_INTER_STATE_WAIT_NEXT:
+                        g_bInterActive = true;
                         l_btnInterStart.setText("Arrêt");
+
+                        // SI c'est actif, on sélectionne l'onglet "intervallomètre"
+                        getActionBar().setSelectedNavigationItem(1);
+                        g_viewPager.setCurrentItem(1);
+
+                        // On lance le timer (directement avec un intervalle de 1000ms)
+                        g_timeHandler.removeCallbacks(g_tTimerTask);
+                        g_timeHandler.postDelayed(g_tTimerTask, 0);
                         break;
                     case LPT_INTER_STATE_WAIT_START:
+                        g_bInterActive = true;
                         l_btnInterStart.setText("Arrêt");
+
+                        // SI c'est actif, on sélectionne l'onglet "intervallomètre"
+                        getActionBar().setSelectedNavigationItem(1);
+                        g_viewPager.setCurrentItem(1);
+
+                        // On lance le timer (directement avec un intervalle de 1000ms)
+                        g_timeHandler.removeCallbacks(g_tTimerTask);
+                        g_timeHandler.postDelayed(g_tTimerTask, 0);
                         break;
                 }
                 break;
             case LPT_GET_INTER_CURR_NB:
+                g_iInterCurrPose = l_iTempValue;
                 break;
             case LPT_GET_CUR_SENSITIVITY:
                 SeekBar seekSens = (SeekBar)findViewById(R.id.seekSensitivity);
@@ -344,7 +395,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
 
         // Configuration du viewPager
-        g_viewPager = (ViewPager) findViewById(R.id.pager);
+        g_viewPager = (NonSwipeableViewPager) findViewById(R.id.pager);
         g_viewPager.setAdapter(g_pagerAdapter);
         g_viewPager.setOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
             @Override
@@ -361,7 +412,6 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         // Sous-titre
         setStatus("Non connecté");
 
-
         // Vérification si on a le BT
         if(BluetoothAdapter.getDefaultAdapter() == null){
             Toast.makeText(getApplicationContext(), "Votre appareil ne dispose pas de Bluetooth!",
@@ -369,8 +419,6 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             finish();
         }
     }
-
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -398,36 +446,88 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
     // ONGLETS
     @Override
     public void onTabSelected(ActionBar.Tab tab, FragmentTransaction ft) {
-        g_viewPager.setCurrentItem(tab.getPosition());
+        if(g_bInterActive == false) g_viewPager.setCurrentItem(tab.getPosition());
+        else
+        {
+            // Désactivation des autres onglets si l'intervallomètre tourne
+            if(tab.getPosition() != 1){
+                getActionBar().setSelectedNavigationItem(1);
+                g_viewPager.setCurrentItem(1);
+                Toast.makeText(getApplicationContext(), "Menu désactivé pendant\nl'utilisation de l'intervallomètre",
+                        Toast.LENGTH_SHORT).show();
+            }
+            else
+            {
+                g_btCom.sendCommand(LPT_GET_INTER_DELAY, 0);
+                g_btCom.sendCommand(LPT_GET_INTER_SHUTTER, 0);
+                g_btCom.sendCommand(LPT_GET_INTER_INTERVAL, 0);
+                g_btCom.sendCommand(LPT_GET_INTER_NB_POSES, 0);
+            }
+        }
     }
 
     @Override
     public void onTabUnselected(ActionBar.Tab tab, FragmentTransaction ft) {
-
     }
 
     @Override
     public void onTabReselected(ActionBar.Tab tab, FragmentTransaction ft) {
-        if(g_bConnected) {
-            switch (tab.getPosition()) {
-                case 0:
-                    g_btCom.sendCommand(LPT_GET_PWM_LED, 0);
-                    g_btCom.sendCommand(LPT_GET_CUR_SENSITIVITY, 0);
-                    g_btCom.sendCommand(LPT_GET_INHIBITION, 0);
-                    g_btCom.sendCommand(LPT_GET_PREFOCUS, 0);
-                    break;
-                case 1:
-                    g_btCom.sendCommand(LPT_GET_INTER_CURR_STAT, 0);
-                    g_btCom.sendCommand(LPT_GET_INTER_DELAY, 0);
-                    g_btCom.sendCommand(LPT_GET_INTER_SHUTTER, 0);
-                    g_btCom.sendCommand(LPT_GET_INTER_INTERVAL, 0);
-                    g_btCom.sendCommand(LPT_GET_INTER_NB_POSES, 0);
-                    break;
-                default:
-                    break;
+        if(g_bInterActive == false) {
+            if (g_bConnected) {
+                switch (tab.getPosition()) {
+                    case 0:
+                        g_btCom.sendCommand(LPT_GET_PWM_LED, 0);
+                        g_btCom.sendCommand(LPT_GET_CUR_SENSITIVITY, 0);
+                        g_btCom.sendCommand(LPT_GET_INHIBITION, 0);
+                        g_btCom.sendCommand(LPT_GET_PREFOCUS, 0);
+                        break;
+                    case 1:
+                        g_btCom.sendCommand(LPT_GET_INTER_CURR_STAT, 0);
+                        g_btCom.sendCommand(LPT_GET_INTER_DELAY, 0);
+                        g_btCom.sendCommand(LPT_GET_INTER_SHUTTER, 0);
+                        g_btCom.sendCommand(LPT_GET_INTER_INTERVAL, 0);
+                        g_btCom.sendCommand(LPT_GET_INTER_NB_POSES, 0);
+                        break;
+                    default:
+                        break;
+                }
             }
         }
     }
+
+    private Runnable g_tTimerTask = new Runnable() {
+        @Override
+        public void run() {
+            MenuItem l_interStat = g_menu.findItem(R.id.interStat);
+
+            // Si changement d'état, on réinitialise le compteur
+            if(g_iCurrentInterStatus != g_iPreviousInterStatus) g_iInterTimeCounter = 0;
+
+            switch(g_iCurrentInterStatus){
+                case LPT_INTER_STATE_ACTIVE:
+                    String l_actStr = "P " + g_iInterCurrPose + "/" + (g_iInterNbPoses==0?"INF":g_iInterNbPoses) + "\n" + g_iInterTimeCounter + "s";
+                    l_interStat.setTitle(l_actStr);
+                    break;
+                case LPT_INTER_STATE_WAIT_START:
+                    String l_stStr = "START\n" + g_iInterTimeCounter + "s";
+                    l_interStat.setTitle(l_stStr);
+                    break;
+                case LPT_INTER_STATE_WAIT_NEXT:
+                    String l_nxtStr = "ATT P" + (g_iInterCurrPose+1) + "\n" + g_iInterTimeCounter + "s";
+                    l_interStat.setTitle(l_nxtStr);
+                    break;
+            }
+
+            // On incrémente le temps
+            g_iInterTimeCounter++;
+
+            // On met l'état
+            g_iPreviousInterStatus = g_iCurrentInterStatus;
+
+            // On poste le prochain dans 1000ms
+            g_timeHandler.postDelayed(this, 1000);
+        }
+    };
 
     public void onBtClick(MenuItem item) {
 
@@ -536,6 +636,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                     TextView text = (TextView)l_view.findViewById(R.id.valSensitivity);
                     text.setText(Integer.toString(progress));
+                    if (g_bConnected) g_btCom.sendCommand(LPT_SET_CUR_SENSITIVITY, seekBar.getProgress());
                 }
 
                 @Override
@@ -545,7 +646,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
                 @Override
                 public void onStopTrackingTouch(SeekBar seekBar) {
-                    if (g_bConnected) g_btCom.sendCommand(LPT_SET_CUR_SENSITIVITY, seekBar.getProgress());
+
                 }
             });
 
@@ -667,6 +768,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                     TextView text = (TextView) l_view.findViewById(R.id.txtInterNumber);
                     text.setText(progress > 0 ? Integer.toString(progress) : "INF");
                     if(g_bConnected) g_btCom.sendCommand(LPT_SET_INTER_NB_POSES, progress);
+                    g_iInterNbPoses = progress;
                 }
 
                 @Override
@@ -687,11 +789,9 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                     if(g_bConnected){
                         if(g_btnInterStart.getText() == "Arrêt"){
                             g_btCom.sendCommand(LPT_SET_INTER_STOP, 0);
-                            g_btnInterStart.setText("Démarrage");
                         }
                         else{
                             g_btCom.sendCommand(LPT_SET_INTER_START, 0);
-                            g_btnInterStart.setText("Arrêt");
                         }
                     }
 

@@ -3,6 +3,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context=".MainActivity">
 
+    <item android:id="@+id/interStat"
+        android:showAsAction="always"
+        android:title=""/>
+
     <item android:id="@+id/firmTxt"
         android:showAsAction="always"
         android:title="Firm.\nN/A"/>
