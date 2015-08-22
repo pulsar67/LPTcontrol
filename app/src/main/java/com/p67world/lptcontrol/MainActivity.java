@@ -196,7 +196,6 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 break;
             case LPT_GET_INTER_CURR_STAT:
                 Button l_btnInterStart = (Button)findViewById(R.id.btnInterStart);
-                if(l_btnInterStart == null) Log.d("MESSAGE", "!!!! NULL !!!!!");
                 g_iCurrentInterStatus = l_iTempValue;
 
                 switch(l_iTempValue){
@@ -368,8 +367,8 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 // On change l'icone du bouton
                 MenuItem btn = g_menu.findItem(R.id.connectBtn);
                 btn.setIcon(R.drawable.bt_icon_n);
-                g_bConnected = true;
-                Toast.makeText(getApplicationContext(), "Connexion avec le LPT perdue!",
+                g_bConnected = false;
+                Toast.makeText(getApplicationContext(), "Bluetooth déconnecté!",
                         Toast.LENGTH_SHORT).show();
                 Log.d("handlemessage", "Disconnected");
             }
@@ -418,6 +417,12 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                     Toast.LENGTH_SHORT).show();
             finish();
         }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if(g_bConnected)g_btCom.close();
+        finish(); // finish activity
     }
 
     @Override
@@ -544,8 +549,10 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             startActivityForResult(serverIntent, REQUEST_CONNECT_BT);
         }
         else {
-            Toast.makeText(getApplicationContext(), "Vous êtes déjà connecté!",
-                    Toast.LENGTH_SHORT).show();
+            g_btCom.close();
+
+            //Toast.makeText(getApplicationContext(), "Vous êtes déjà connecté!",
+            //        Toast.LENGTH_SHORT).show();
         }
 
     }

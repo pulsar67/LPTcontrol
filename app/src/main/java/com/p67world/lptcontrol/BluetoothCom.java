@@ -101,6 +101,10 @@ public class BluetoothCom {
     public void close() {
         try {
             g_btSocket.close();
+            Message msg = g_handler.obtainMessage();
+            msg.arg1 = 2;
+            g_handler.sendMessage(msg);
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -141,6 +145,7 @@ public class BluetoothCom {
             g_btSendStream.write(data);
             g_btSendStream.flush();
         } catch (IOException e) {
+            close();
             e.printStackTrace();
         }
     }
