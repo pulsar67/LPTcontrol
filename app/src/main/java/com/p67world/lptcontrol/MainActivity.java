@@ -125,7 +125,43 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
     private int g_iInterTimeCounter = 0;
     private static int g_iInterNbPoses = 0;
     private int g_iInterCurrPose = 0;
+    private int g_iCurrentTab = 0;
+    private boolean g_bExternalSensor = false;
+    private boolean g_bIsLpt1 = false;
 
+    // Elements graphiques
+    // Onglet général
+    private static SeekBar g_seekLedLum = null;
+    private static SeekBar g_seekSensitivity = null;
+    private static SeekBar g_seekInhibit = null;
+    private static CheckBox g_checkPrefocus = null;
+    private static CheckBox g_checkExtSensor = null;
+    private static SeekBar g_seekExtDelay = null;
+
+    // Onglet intervallomètre
+    private static SeekBar g_seekInterStart = null;
+    private static SeekBar g_seekInterShutter = null;
+    private static SeekBar g_seekInterInterval = null;
+    private static SeekBar g_seekInterNumber = null;
+    private static Button g_btnInterStart = null;
+
+    // Onglet lag
+    private static Button g_btnLag = null;
+    private static TextView g_txtRes = null;
+    private static CheckBox g_check0 = null;
+    private static CheckBox g_check1 = null;
+    private static CheckBox g_check2 = null;
+    private static CheckBox g_check3 = null;
+    private static CheckBox g_check4 = null;
+    private static CheckBox g_check5 = null;
+    private static CheckBox g_check6 = null;
+    private static CheckBox g_check7 = null;
+
+    // Menu
+    private static MenuItem g_btIcon = null;
+    private static MenuItem g_lvlBattIcon = null;
+    private static MenuItem g_firmTxt = null;
+    private static MenuItem g_interStat = null;
 
     private void manageCom(byte[] data){
         byte[] l_bTempValue = { data[1], data[2], data[3], data[4]};
@@ -157,73 +193,109 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             case LPT_GET_SENSITIVITY_MAX:
                 break;
             case LPT_GET_INHIBITION:
-                SeekBar seekInhib = (SeekBar)findViewById(R.id.seekInhibition);
                 int iInhibitVal = l_iTempValue/100;
-                seekInhib.setProgress((iInhibitVal < 100) ? iInhibitVal:100);
+                g_seekInhibit.setProgress((iInhibitVal < 100) ? iInhibitVal:100);
                 break;
             case LPT_GET_LAG:
+                g_seekExtDelay.setProgress((l_iTempValue<100)?l_iTempValue:100);
                 break;
             case LPT_GET_SENSOR:
+                if(l_iTempValue == 0){
+                    g_bExternalSensor = false;
+                    g_checkExtSensor.setChecked(false);
+                    g_seekExtDelay.setEnabled(false);
+                }
+                else{
+                    g_bExternalSensor = true;
+                    g_checkExtSensor.setChecked(true);
+                    g_seekExtDelay.setEnabled(true);
+                }
                 break;
             case LPT_GET_FW_VERSION:
                 //byte[] l_maj = {data[1], data[2]};
-                int l_iMaj = (data[1] & 0xFF) << 8 | (data[2] & 0xFF);
-                int l_iMin = (data[3] & 0xFF) << 8 | (data[4] & 0xFF);
+                int l_iMaj = (data[1] & 0xFF) * 10 | (data[2] & 0xFF);
+                if(l_iMaj == 1) g_bIsLpt1 = true;
+                else            g_bIsLpt1 = false;
+                int l_iMin = (data[3] & 0xFF) * 10 | (data[4] & 0xFF);
                 String str = "Firm.\nv" + Integer.toString(l_iMaj) + "." + Integer.toString(l_iMin);
-                MenuItem l_firmTxt = g_menu.findItem(R.id.firmTxt);
-                l_firmTxt.setTitle(str);
+                g_firmTxt.setTitle(str);
                 break;
             case LPT_GET_PWM_LED:
-                SeekBar seekLum = (SeekBar)findViewById(R.id.seekLedLuminosity);
-                seekLum.setProgress(l_iTempValue);
+                g_seekLedLum.setProgress(l_iTempValue);
                 break;
             case LPT_GET_INTER_NB_POSES:
-                SeekBar seekInterNumber = (SeekBar)findViewById(R.id.seekInterNumber);
-                seekInterNumber.setProgress(l_iTempValue);
+                g_seekInterNumber.setProgress(l_iTempValue);
                 g_iInterNbPoses = l_iTempValue;
                 break;
             case LPT_GET_INTER_SHUTTER:
-                SeekBar seekInterShutter = (SeekBar)findViewById(R.id.seekInterShutter);
-                seekInterShutter.setProgress(l_iTempValue);
+                g_seekInterShutter.setProgress(l_iTempValue);
                 break;
             case LPT_GET_INTER_INTERVAL:
-                SeekBar seekInterInterval = (SeekBar)findViewById(R.id.seekInterInterval);
-                seekInterInterval.setProgress(l_iTempValue);
+                g_seekInterInterval.setProgress(l_iTempValue);
                 break;
             case LPT_GET_INTER_DELAY:
-                SeekBar seekInterStart = (SeekBar)findViewById(R.id.seekInterStart);
-                seekInterStart.setProgress(l_iTempValue);
+                g_seekInterStart.setProgress(l_iTempValue);
                 break;
             case LPT_GET_INTER_CURR_STAT:
-                Button l_btnInterStart = (Button)findViewById(R.id.btnInterStart);
                 g_iCurrentInterStatus = l_iTempValue;
 
                 switch(l_iTempValue){
                     case LPT_INTER_STATE_ACTIVE:
-                        l_btnInterStart.setText("Arrêt");
+                        g_btnInterStart.setText("Arrêt");
 
-                        // SI c'est actif, on sélectionne l'onglet "intervallomètre"
-                        getActionBar().setSelectedNavigationItem(1);
-                        g_viewPager.setCurrentItem(1);
+                        // On grise les seekbars
+                        setInterEnable(false);
 
                         // On poste le message
                         g_timeHandler.removeCallbacks(g_tTimerTask);
                         g_timeHandler.postDelayed(g_tTimerTask, 0);
+
+                        switch(g_iCurrentTab){
+                            case 0:
+                                setGeneralEnable(false);
+                                break;
+                            case 1:
+                                setInterEnable(false);
+                                break;
+                            default:
+                                setLagEnable(false);
+                                break;
+                        }
                         break;
                     case LPT_INTER_STATE_INACTIVE:
                         g_bInterActive = false;
-                        l_btnInterStart.setText("Démarrage");
+                        g_btnInterStart.setText("Démarrage");
 
                         // On stoppe le timer
                         g_timeHandler.removeCallbacks(g_tTimerTask);
 
                         // On efface
-                        MenuItem l_interStat = g_menu.findItem(R.id.interStat);
-                        l_interStat.setTitle("");
+                        g_interStat.setTitle("");
+
+                        // On dégrise les seekbars
+                        setInterEnable(true);
+
+                        // On réinitialise le compteur de temps
+                        g_iInterTimeCounter = 0;
+
+                        switch(g_iCurrentTab){
+                            case 0:
+                                setGeneralEnable(true);
+                                break;
+                            case 1:
+                                setInterEnable(true);
+                                break;
+                            default:
+                                setLagEnable(true);
+                                break;
+                        }
                         break;
                     case LPT_INTER_STATE_WAIT_NEXT:
                         g_bInterActive = true;
-                        l_btnInterStart.setText("Arrêt");
+                        g_btnInterStart.setText("Arrêt");
+
+                        // On grise les seekbars
+                        setInterEnable(false);
 
                         // SI c'est actif, on sélectionne l'onglet "intervallomètre"
                         getActionBar().setSelectedNavigationItem(1);
@@ -232,10 +304,25 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                         // On lance le timer (directement avec un intervalle de 1000ms)
                         g_timeHandler.removeCallbacks(g_tTimerTask);
                         g_timeHandler.postDelayed(g_tTimerTask, 0);
+
+                        switch(g_iCurrentTab){
+                            case 0:
+                                setGeneralEnable(false);
+                                break;
+                            case 1:
+                                setInterEnable(false);
+                                break;
+                            default:
+                                setLagEnable(false);
+                                break;
+                        }
                         break;
                     case LPT_INTER_STATE_WAIT_START:
                         g_bInterActive = true;
-                        l_btnInterStart.setText("Arrêt");
+                        g_btnInterStart.setText("Arrêt");
+
+                        // On grise les seekbars
+                        setInterEnable(false);
 
                         // SI c'est actif, on sélectionne l'onglet "intervallomètre"
                         getActionBar().setSelectedNavigationItem(1);
@@ -244,6 +331,18 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                         // On lance le timer (directement avec un intervalle de 1000ms)
                         g_timeHandler.removeCallbacks(g_tTimerTask);
                         g_timeHandler.postDelayed(g_tTimerTask, 0);
+
+                        switch(g_iCurrentTab){
+                            case 0:
+                                setGeneralEnable(false);
+                                break;
+                            case 1:
+                                setInterEnable(false);
+                                break;
+                            default:
+                                setLagEnable(false);
+                                break;
+                        }
                         break;
                 }
                 break;
@@ -251,31 +350,28 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 g_iInterCurrPose = l_iTempValue;
                 break;
             case LPT_GET_CUR_SENSITIVITY:
-                SeekBar seekSens = (SeekBar)findViewById(R.id.seekSensitivity);
-                seekSens.setProgress(l_iTempValue);
+                g_seekSensitivity.setProgress(l_iTempValue);
                 break;
             case LPT_GET_PREFOCUS:
-                CheckBox checkPrefocus = (CheckBox)findViewById(R.id.checkPrefocus);
-                checkPrefocus.setChecked(l_iTempValue==1);
+                g_checkPrefocus.setChecked(l_iTempValue==1);
                 break;
             case LPT_GET_BATT_LVL:
-                g_iBattLvl = l_iTempValue;
-                MenuItem l_lvlBattIcon = g_menu.findItem(R.id.battIcon);
+                g_iBattLvl = g_bIsLpt1?l_iTempValue/2:l_iTempValue;
                 switch(g_iBattLvl){
                     case 1:
-                        l_lvlBattIcon.setIcon(g_bCharging?R.drawable.batt1ch:R.drawable.batt1);
+                        g_lvlBattIcon.setIcon(g_bCharging?R.drawable.batt1ch:R.drawable.batt1);
                         break;
                     case 2:
-                        l_lvlBattIcon.setIcon(g_bCharging?R.drawable.batt2ch:R.drawable.batt2);
+                        g_lvlBattIcon.setIcon(g_bCharging?R.drawable.batt2ch:R.drawable.batt2);
                         break;
                     case 3:
-                        l_lvlBattIcon.setIcon(g_bCharging?R.drawable.batt3ch:R.drawable.batt3);
+                        g_lvlBattIcon.setIcon(g_bCharging?R.drawable.batt3ch:R.drawable.batt3);
                         break;
                     case 4:
-                        l_lvlBattIcon.setIcon(g_bCharging?R.drawable.batt4ch:R.drawable.batt4);
+                        g_lvlBattIcon.setIcon(g_bCharging?R.drawable.batt4ch:R.drawable.batt4);
                         break;
                     default:
-                        l_lvlBattIcon.setIcon(g_bCharging?R.drawable.batt0ch:R.drawable.batt0);
+                        g_lvlBattIcon.setIcon(g_bCharging?R.drawable.batt0ch:R.drawable.batt0);
                         break;
                 }
                 break;
@@ -293,6 +389,35 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             return;
         }
         actionBar.setSubtitle(subtitle);
+    }
+
+    // Griser/dégriser l'IHM
+    private void setGeneralEnable(boolean enabled){
+        g_seekLedLum.setEnabled(g_bIsLpt1?false:enabled);
+        g_seekSensitivity.setEnabled(enabled);
+        g_seekInhibit.setEnabled(enabled);
+        g_checkPrefocus.setEnabled(enabled);
+        g_checkExtSensor.setEnabled(enabled);
+        g_seekExtDelay.setEnabled(g_bExternalSensor?enabled:false);
+    }
+
+    private void setInterEnable(boolean enabled){
+        g_seekInterStart.setEnabled(enabled);
+        g_seekInterShutter.setEnabled(enabled);
+        g_seekInterInterval.setEnabled(enabled);
+        g_seekInterNumber.setEnabled(enabled);
+    }
+
+    private void setLagEnable(boolean enabled){
+        g_btnLag.setEnabled(enabled);
+        g_check0.setEnabled(enabled);
+        g_check1.setEnabled(enabled);
+        g_check2.setEnabled(enabled);
+        g_check3.setEnabled(enabled);
+        g_check4.setEnabled(enabled);
+        g_check5.setEnabled(enabled);
+        g_check6.setEnabled(enabled);
+        g_check7.setEnabled(enabled);
     }
 
     final Handler handler = new Handler() {
@@ -331,8 +456,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             int co = msg.arg1;
             if(co == 1) {
                 // On change l'icone du bouton
-                MenuItem btn = g_menu.findItem(R.id.connectBtn);
-                btn.setIcon(R.drawable.bt_icon_c);
+                g_btIcon.setIcon(R.drawable.bt_icon_c);
                 setStatus("Connecté");
                 g_bConnected = true;
 
@@ -348,6 +472,8 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                         g_btCom.sendCommand(LPT_GET_CUR_SENSITIVITY, 0);
                         g_btCom.sendCommand(LPT_GET_INHIBITION, 0);
                         g_btCom.sendCommand(LPT_GET_PREFOCUS, 0);
+                        g_btCom.sendCommand(LPT_GET_SENSOR, 0);
+                        g_btCom.sendCommand(LPT_GET_LAG, 0);
                         break;
                     case 1:
                         g_btCom.sendCommand(LPT_GET_INTER_CURR_STAT, 0);
@@ -365,8 +491,11 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 Log.d("handlemessage", "Connected");
             } else if(co == 2){
                 // On change l'icone du bouton
-                MenuItem btn = g_menu.findItem(R.id.connectBtn);
-                btn.setIcon(R.drawable.bt_icon_n);
+                g_btIcon.setIcon(R.drawable.bt_icon_n);
+
+                // On stoppe les éventuelles callbacks timer
+                g_timeHandler.removeCallbacks(g_tTimerTask);
+
                 g_bConnected = false;
                 Toast.makeText(getApplicationContext(), "Bluetooth déconnecté!",
                         Toast.LENGTH_SHORT).show();
@@ -409,7 +538,11 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         actionBar.addTab(actionBar.newTab().setText("LAG").setTabListener(this));
 
         // Sous-titre
-        setStatus("Non connecté");
+        if(!g_bConnected)setStatus("Non connecté");
+        else {
+            // Sous-titre
+            setStatus("Connecté");
+        }
 
         // Vérification si on a le BT
         if(BluetoothAdapter.getDefaultAdapter() == null){
@@ -430,6 +563,21 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         g_menu = menu;
+
+        // Création des éléments
+        g_btIcon = g_menu.findItem(R.id.connectBtn);
+        g_lvlBattIcon = g_menu.findItem(R.id.battIcon);
+        g_firmTxt = g_menu.findItem(R.id.firmTxt);
+        g_interStat = g_menu.findItem(R.id.interStat);
+
+        if(g_bConnected){
+            // Rafraîchissement du menu
+            g_btCom.sendCommand(LPT_GET_FW_VERSION, 0);
+            g_btCom.sendCommand(LPT_GET_BATT_LVL, 0);
+            g_btCom.sendCommand(LPT_GET_CHARGING, 0);
+            g_btIcon.setIcon(R.drawable.bt_icon_c);
+
+        }
         return true;
     }
 
@@ -451,24 +599,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
     // ONGLETS
     @Override
     public void onTabSelected(ActionBar.Tab tab, FragmentTransaction ft) {
-        if(g_bInterActive == false) g_viewPager.setCurrentItem(tab.getPosition());
-        else
-        {
-            // Désactivation des autres onglets si l'intervallomètre tourne
-            if(tab.getPosition() != 1){
-                getActionBar().setSelectedNavigationItem(1);
-                g_viewPager.setCurrentItem(1);
-                Toast.makeText(getApplicationContext(), "Menu désactivé pendant\nl'utilisation de l'intervallomètre",
-                        Toast.LENGTH_SHORT).show();
-            }
-            else
-            {
-                g_btCom.sendCommand(LPT_GET_INTER_DELAY, 0);
-                g_btCom.sendCommand(LPT_GET_INTER_SHUTTER, 0);
-                g_btCom.sendCommand(LPT_GET_INTER_INTERVAL, 0);
-                g_btCom.sendCommand(LPT_GET_INTER_NB_POSES, 0);
-            }
-        }
+        g_viewPager.setCurrentItem(tab.getPosition());
     }
 
     @Override
@@ -477,49 +608,62 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
     @Override
     public void onTabReselected(ActionBar.Tab tab, FragmentTransaction ft) {
-        if(g_bInterActive == false) {
-            if (g_bConnected) {
-                switch (tab.getPosition()) {
-                    case 0:
+        g_iCurrentTab = tab.getPosition();
+        switch (tab.getPosition()) {
+            case 0:
+                if(g_bInterActive == false){
+                    if (g_bConnected) {
                         g_btCom.sendCommand(LPT_GET_PWM_LED, 0);
                         g_btCom.sendCommand(LPT_GET_CUR_SENSITIVITY, 0);
                         g_btCom.sendCommand(LPT_GET_INHIBITION, 0);
                         g_btCom.sendCommand(LPT_GET_PREFOCUS, 0);
-                        break;
-                    case 1:
+                        g_btCom.sendCommand(LPT_GET_SENSOR, 0);
+                        g_btCom.sendCommand(LPT_GET_LAG, 0);
+                    }
+                    setGeneralEnable(true);
+                } else {
+                    setGeneralEnable(false);
+                }
+                break;
+            case 1:
+                if(g_bInterActive == false) {
+                    if (g_bConnected) {
                         g_btCom.sendCommand(LPT_GET_INTER_CURR_STAT, 0);
                         g_btCom.sendCommand(LPT_GET_INTER_DELAY, 0);
                         g_btCom.sendCommand(LPT_GET_INTER_SHUTTER, 0);
                         g_btCom.sendCommand(LPT_GET_INTER_INTERVAL, 0);
                         g_btCom.sendCommand(LPT_GET_INTER_NB_POSES, 0);
-                        break;
-                    default:
-                        break;
+                    }
                 }
-            }
+                break;
+            default:
+                if(g_bInterActive == false){
+                    setLagEnable(true);
+                } else {
+                    setLagEnable(false);
+                }
+                break;
         }
     }
 
     private Runnable g_tTimerTask = new Runnable() {
         @Override
         public void run() {
-            MenuItem l_interStat = g_menu.findItem(R.id.interStat);
-
             // Si changement d'état, on réinitialise le compteur
             if(g_iCurrentInterStatus != g_iPreviousInterStatus) g_iInterTimeCounter = 0;
 
             switch(g_iCurrentInterStatus){
                 case LPT_INTER_STATE_ACTIVE:
                     String l_actStr = "P " + g_iInterCurrPose + "/" + (g_iInterNbPoses==0?"INF":g_iInterNbPoses) + "\n" + g_iInterTimeCounter + "s";
-                    l_interStat.setTitle(l_actStr);
+                    g_interStat.setTitle(l_actStr);
                     break;
                 case LPT_INTER_STATE_WAIT_START:
                     String l_stStr = "START\n" + g_iInterTimeCounter + "s";
-                    l_interStat.setTitle(l_stStr);
+                    g_interStat.setTitle(l_stStr);
                     break;
                 case LPT_INTER_STATE_WAIT_NEXT:
                     String l_nxtStr = "ATT P" + (g_iInterCurrPose+1) + "\n" + g_iInterTimeCounter + "s";
-                    l_interStat.setTitle(l_nxtStr);
+                    g_interStat.setTitle(l_nxtStr);
                     break;
             }
 
@@ -550,9 +694,6 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         }
         else {
             g_btCom.close();
-
-            //Toast.makeText(getApplicationContext(), "Vous êtes déjà connecté!",
-            //        Toast.LENGTH_SHORT).show();
         }
 
     }
@@ -602,25 +743,27 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
     // Chargement du contenu
     public static class GeneralFragment extends Fragment {
-        SeekBar g_seekLedLum = null;
-        SeekBar g_seekSensitivity = null;
-        SeekBar g_seekInhibit = null;
-        CheckBox g_checkPrefocus = null;
 
         @Nullable
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
             final View l_view = inflater.inflate(R.layout.fragment_general, container, false);
 
+            // Création des éléments
+            g_seekLedLum = (SeekBar)l_view.findViewById(R.id.seekLedLuminosity);
+            g_seekSensitivity = (SeekBar)l_view.findViewById(R.id.seekSensitivity);
+            g_seekInhibit = (SeekBar)l_view.findViewById(R.id.seekInhibition);
+            g_checkPrefocus = (CheckBox)l_view.findViewById(R.id.checkPrefocus);
+            g_checkExtSensor = (CheckBox)l_view.findViewById(R.id.checkExtSensor);
+            g_seekExtDelay = (SeekBar)l_view.findViewById(R.id.seekExtDelay);
 
             // Luminosité LEDs
-            g_seekLedLum = (SeekBar)l_view.findViewById(R.id.seekLedLuminosity);
             g_seekLedLum.setMax(100);
             g_seekLedLum.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                     TextView text = (TextView)l_view.findViewById(R.id.valLedLum);
-                    String val = Integer.toString(progress) + "%";
+                    String val = Integer.toString(progress>4?progress:4) + "%";
                     text.setText(val);
                 }
 
@@ -631,12 +774,11 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
                 @Override
                 public void onStopTrackingTouch(SeekBar seekBar) {
-                    if (g_bConnected) g_btCom.sendCommand(LPT_SET_PWM_LED, seekBar.getProgress());
+                    if (g_bConnected) g_btCom.sendCommand(LPT_SET_PWM_LED, seekBar.getProgress()>4?seekBar.getProgress():4);
                 }
             });
 
             // Sensibilité
-            g_seekSensitivity = (SeekBar)l_view.findViewById(R.id.seekSensitivity);
             g_seekSensitivity.setMax(4);
             g_seekSensitivity.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
@@ -658,7 +800,6 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             });
 
             // Inhibition
-            g_seekInhibit = (SeekBar)l_view.findViewById(R.id.seekInhibition);
             g_seekInhibit.setMax(100);
             g_seekInhibit.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
@@ -680,13 +821,44 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             });
 
             // Préfocus
-            g_checkPrefocus = (CheckBox)l_view.findViewById(R.id.checkPrefocus);
             g_checkPrefocus.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     if (g_bConnected) {
                         g_btCom.sendCommand(LPT_SET_PREFOCUS, g_checkPrefocus.isChecked()?1:0);
                     }
+                }
+            });
+
+            // Capteur externe
+            g_checkExtSensor.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    g_seekExtDelay.setEnabled(g_checkExtSensor.isChecked());
+                    if(g_bConnected){
+                        g_btCom.sendCommand(LPT_SET_SENSOR, g_checkExtSensor.isChecked()?1:0);
+                    }
+                }
+            });
+
+            // Retard déclenchement capteur externe
+            g_seekExtDelay.setMax(100);
+            g_seekExtDelay.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                    TextView text = (TextView) l_view.findViewById(R.id.valExtDelay);
+                    String val = Integer.toString(progress) + "ms";
+                    text.setText(val);
+                }
+
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {
+
+                }
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
+                    if (g_bConnected) g_btCom.sendCommand(LPT_SET_LAG, seekBar.getProgress());
                 }
             });
 
@@ -700,8 +872,14 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
             final View l_view = inflater.inflate(R.layout.fragment_inter, container, false);
 
+            // Création des éléments graphiques
+            g_seekInterStart = (SeekBar)l_view.findViewById(R.id.seekInterStart);
+            g_seekInterShutter = (SeekBar)l_view.findViewById(R.id.seekInterShutter);
+            g_seekInterInterval = (SeekBar)l_view.findViewById(R.id.seekInterInterval);
+            g_seekInterNumber = (SeekBar)l_view.findViewById(R.id.seekInterNumber);
+            g_btnInterStart = (Button)l_view.findViewById(R.id.btnInterStart);
+
             // Seekbars de réglages
-            SeekBar g_seekInterStart = (SeekBar)l_view.findViewById(R.id.seekInterStart);
             g_seekInterStart.setMax(60);
             g_seekInterStart.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
@@ -709,7 +887,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                     TextView text = (TextView) l_view.findViewById(R.id.txtInterStart);
                     String val = Integer.toString(progress) + " s";
                     text.setText(val);
-                    if(g_bConnected)g_btCom.sendCommand(LPT_SET_INTER_DELAY, progress);
+                    if (g_bConnected) g_btCom.sendCommand(LPT_SET_INTER_DELAY, progress);
                 }
 
                 @Override
@@ -723,7 +901,6 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 }
             });
 
-            SeekBar g_seekInterShutter = (SeekBar)l_view.findViewById(R.id.seekInterShutter);
             g_seekInterShutter.setMax(60);
             g_seekInterShutter.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
@@ -731,7 +908,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                     TextView text = (TextView) l_view.findViewById(R.id.txtInterShutter);
                     String val = Integer.toString(progress) + " s";
                     text.setText(val);
-                    if(g_bConnected)g_btCom.sendCommand(LPT_SET_INTER_SHUTTER, progress);
+                    if (g_bConnected) g_btCom.sendCommand(LPT_SET_INTER_SHUTTER, progress);
                 }
 
                 @Override
@@ -745,7 +922,6 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 }
             });
 
-            SeekBar g_seekInterInterval = (SeekBar)l_view.findViewById(R.id.seekInterInterval);
             g_seekInterInterval.setMax(300);
             g_seekInterInterval.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
@@ -767,7 +943,6 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 }
             });
 
-            SeekBar g_seekInterNumber = (SeekBar)l_view.findViewById(R.id.seekInterNumber);
             g_seekInterNumber.setMax(99);
             g_seekInterNumber.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
@@ -789,7 +964,6 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 }
             });
 
-            final Button g_btnInterStart = (Button)l_view.findViewById(R.id.btnInterStart);
             g_btnInterStart.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -811,17 +985,27 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
     }
 
     public static class LagFragment extends Fragment {
-        Button g_btnLag = null;
         int g_iLagVal = 0;
-        TextView g_txtRes = null;
+
 
         @Nullable
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
             View l_view = inflater.inflate(R.layout.fragment_lag, container, false);
 
-            // Bouton lancement lag
+            // Création des éléments graphiques
             g_btnLag = (Button)l_view.findViewById(R.id.btnStartLag);
+            g_txtRes = (TextView)l_view.findViewById(R.id.txtResult);
+            g_check0 = (CheckBox)l_view.findViewById(R.id.checkBox0);
+            g_check1 = (CheckBox)l_view.findViewById(R.id.checkBox1);
+            g_check2 = (CheckBox)l_view.findViewById(R.id.checkBox2);
+            g_check3 = (CheckBox)l_view.findViewById(R.id.checkBox3);
+            g_check4 = (CheckBox)l_view.findViewById(R.id.checkBox4);
+            g_check5 = (CheckBox)l_view.findViewById(R.id.checkBox5);
+            g_check6 = (CheckBox)l_view.findViewById(R.id.checkBox6);
+            g_check7 = (CheckBox)l_view.findViewById(R.id.checkBox7);
+
+            // Bouton lancement lag
             g_btnLag.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -830,8 +1014,6 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             });
 
             // Checkboxes
-            g_txtRes = (TextView)l_view.findViewById(R.id.txtResult);
-            CheckBox g_check0 = (CheckBox)l_view.findViewById(R.id.checkBox0);
             g_check0.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -840,7 +1022,6 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 }
             });
 
-            CheckBox g_check1 = (CheckBox)l_view.findViewById(R.id.checkBox1);
             g_check1.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -849,7 +1030,6 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 }
             });
 
-            CheckBox g_check2 = (CheckBox)l_view.findViewById(R.id.checkBox2);
             g_check2.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -858,7 +1038,6 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 }
             });
 
-            CheckBox g_check3 = (CheckBox)l_view.findViewById(R.id.checkBox3);
             g_check3.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -867,7 +1046,6 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 }
             });
 
-            CheckBox g_check4 = (CheckBox)l_view.findViewById(R.id.checkBox4);
             g_check4.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -876,7 +1054,6 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 }
             });
 
-            CheckBox g_check5 = (CheckBox)l_view.findViewById(R.id.checkBox5);
             g_check5.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -885,7 +1062,6 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 }
             });
 
-            CheckBox g_check6 = (CheckBox)l_view.findViewById(R.id.checkBox6);
             g_check6.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -894,7 +1070,6 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 }
             });
 
-            CheckBox g_check7 = (CheckBox)l_view.findViewById(R.id.checkBox7);
             g_check7.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
