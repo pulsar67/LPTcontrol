@@ -169,22 +169,21 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         switch(data[0]){
             case LPT_GET_CHARGING:
                 g_bCharging = l_iTempValue!=0?true:false;
-                MenuItem l_chBattIcon = g_menu.findItem(R.id.battIcon);
                 switch(g_iBattLvl){
                     case 1:
-                        l_chBattIcon.setIcon(g_bCharging?R.drawable.batt1ch:R.drawable.batt1);
+                        g_lvlBattIcon.setIcon(g_bCharging?R.drawable.batt1ch:R.drawable.batt1);
                         break;
                     case 2:
-                        l_chBattIcon.setIcon(g_bCharging?R.drawable.batt2ch:R.drawable.batt2);
+                        g_lvlBattIcon.setIcon(g_bCharging?R.drawable.batt2ch:R.drawable.batt2);
                         break;
                     case 3:
-                        l_chBattIcon.setIcon(g_bCharging?R.drawable.batt3ch:R.drawable.batt3);
+                        g_lvlBattIcon.setIcon(g_bCharging?R.drawable.batt3ch:R.drawable.batt3);
                         break;
                     case 4:
-                        l_chBattIcon.setIcon(g_bCharging?R.drawable.batt4ch:R.drawable.batt4);
+                        g_lvlBattIcon.setIcon(g_bCharging?R.drawable.batt4ch:R.drawable.batt4);
                         break;
                     default:
-                        l_chBattIcon.setIcon(g_bCharging?R.drawable.batt0ch:R.drawable.batt0);
+                        g_lvlBattIcon.setIcon(g_bCharging?R.drawable.batt0ch:R.drawable.batt0);
                         break;
                 }
                 break;
@@ -359,7 +358,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 g_iBattLvl = g_bIsLpt1?l_iTempValue/2:l_iTempValue;
                 switch(g_iBattLvl){
                     case 1:
-                        g_lvlBattIcon.setIcon(g_bCharging?R.drawable.batt1ch:R.drawable.batt1);
+                        g_lvlBattIcon.setIcon(g_bCharging ? R.drawable.batt1ch : R.drawable.batt1);
                         break;
                     case 2:
                         g_lvlBattIcon.setIcon(g_bCharging?R.drawable.batt2ch:R.drawable.batt2);
@@ -885,9 +884,9 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 @Override
                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                     TextView text = (TextView) l_view.findViewById(R.id.txtInterStart);
-                    String val = Integer.toString(progress) + " s";
+                    String val = Integer.toString(progress>0?progress:1) + " s";
                     text.setText(val);
-                    if (g_bConnected) g_btCom.sendCommand(LPT_SET_INTER_DELAY, progress);
+                    if (g_bConnected) g_btCom.sendCommand(LPT_SET_INTER_DELAY, progress>0?progress:1);
                 }
 
                 @Override
@@ -906,9 +905,9 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 @Override
                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                     TextView text = (TextView) l_view.findViewById(R.id.txtInterShutter);
-                    String val = Integer.toString(progress) + " s";
+                    String val = Integer.toString(progress>0?progress:1) + " s";
                     text.setText(val);
-                    if (g_bConnected) g_btCom.sendCommand(LPT_SET_INTER_SHUTTER, progress);
+                    if (g_bConnected) g_btCom.sendCommand(LPT_SET_INTER_SHUTTER, progress>0?progress:1);
                 }
 
                 @Override
@@ -927,9 +926,9 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 @Override
                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                     TextView text = (TextView) l_view.findViewById(R.id.txtInterInterval);
-                    String val = Integer.toString(progress) + " s";
+                    String val = Integer.toString(progress>0?progress:1) + " s";
                     text.setText(val);
-                    if(g_bConnected)g_btCom.sendCommand(LPT_SET_INTER_INTERVAL, progress);
+                    if(g_bConnected)g_btCom.sendCommand(LPT_SET_INTER_INTERVAL, progress>0?progress:1);
                 }
 
                 @Override

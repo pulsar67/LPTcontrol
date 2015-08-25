@@ -33,7 +33,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/txtInterStart"
-            android:text="0 s"
+            android:text="1 s"
             android:layout_row="0"
             android:layout_column="2"
             android:layout_gravity="center"/>
@@ -60,7 +60,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/txtInterShutter"
-            android:text="0 s"
+            android:text="1 s"
             android:layout_row="1"
             android:layout_column="2"
             android:layout_gravity="center"/>
@@ -87,7 +87,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/txtInterInterval"
-            android:text="0 s"
+            android:text="1 s"
             android:layout_row="2"
             android:layout_column="2"
             android:layout_gravity="center"/>
